@@ -12,6 +12,8 @@ import {
   TouchableOpacity,
   useColorScheme,
 } from 'react-native';
+import { supabase } from '../lib/supabase';
+
 
 export default function ForgotPasswordScreen() {
   const router = useRouter();
@@ -21,37 +23,41 @@ export default function ForgotPasswordScreen() {
   const [loading, setLoading] = useState(false);
 
   const handleReset = async () => {
-    const emailTrimmed = email.trim();
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const emailTrimmed = email.trim();
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-    if (!emailTrimmed || !emailRegex.test(emailTrimmed)) {
-      Alert.alert('خطأ', 'يرجى إدخال بريد إلكتروني صحيح');
-      return;
+  if (!emailTrimmed || !emailRegex.test(emailTrimmed)) {
+    Alert.alert('خطأ', 'يرجى إدخال بريد إلكتروني صحيح');
+    return;
+  }
+
+  setLoading(true);
+
+  try {
+    const { error } = await supabase.auth.resetPasswordForEmail(emailTrimmed, {
+      redirectTo: 'https://your-app-url.com/update-password', // غيّر هذا لاحقًا حسب عنوان التطبيق
+    });
+
+    if (error) {
+      throw error;
     }
 
-    setLoading(true);
+    Alert.alert(
+      'تم الإرسال',
+      'إذا كان البريد الذي أدخلته مرتبطًا بحساب، ستتلقى رسالة لإعادة تعيين كلمة المرور.'
+    );
+    router.back();
+  } catch (error: any) {
+    console.log('Reset password error:', error.message);
 
-    try {
-      await sendPasswordResetEmail(auth, emailTrimmed);
-
-      Alert.alert(
-        'تم الإرسال',
-        'إذا كان البريد الذي أدخلته مرتبطًا بحساب، ستتلقى رسالة لإعادة تعيين كلمة المرور.'
-      );
-      router.back();
-    } catch (error: any) {
-      console.log('Reset password error:', error);
-
-      // رسائل خطأ عامة لتحسين الأمان
-      Alert.alert(
-        'فشل في إرسال الرابط',
-        'حدث خطأ أثناء محاولة إرسال رابط إعادة تعيين كلمة المرور. حاول مرة أخرى لاحقًا.'
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
-
+    Alert.alert(
+      'فشل في إرسال الرابط',
+      'حدث خطأ أثناء محاولة إرسال رابط إعادة تعيين كلمة المرور. حاول مرة أخرى لاحقًا.'
+    );
+  } finally {
+    setLoading(false);
+  }
+};
   return (
     <KeyboardAvoidingView
       style={[styles.container, { backgroundColor: isDark ? '#121212' : '#fff' }]}

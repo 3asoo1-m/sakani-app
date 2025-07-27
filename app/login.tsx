@@ -1,6 +1,5 @@
 import { AntDesign } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { signInWithEmailAndPassword } from 'firebase/auth';
 import React, { useState } from 'react';
 import {
   ActivityIndicator,
@@ -14,7 +13,7 @@ import {
   TouchableOpacity,
   useColorScheme,
 } from 'react-native';
-import { auth } from '../lib/firebase'; // عدل المسار حسب مكان ملف firebase.js
+import { supabase } from '../lib/supabase';
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -51,33 +50,31 @@ export default function LoginScreen() {
 
   setLoading(true);
   try {
-    await signInWithEmailAndPassword(auth, email.trim(), password.trim());
-    Alert.alert('نجاح', 'تم تسجيل الدخول بنجاح!');
-    router.replace('/tabs/home');
-  } catch (error: any) {
-    console.log('Firebase auth error:', error);
+  const { data, error } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password: password.trim(),
+      });
 
-    if (error.code === 'auth/user-disabled') {
-      router.replace('/account-disabled');
-      return;
+      if (error) {
+        console.log('Supabase auth error:', error.message);
+        let message = 'حدث خطأ أثناء تسجيل الدخول. حاول مرة أخرى.';
+        if (error.message.includes('Invalid login credentials')) {
+          message = 'البريد الإلكتروني أو كلمة المرور غير صحيحة.';
+        }
+        Alert.alert('خطأ في تسجيل الدخول', message);
+        return;
+      }
+
+      // نجاح تسجيل الدخول
+      Alert.alert('نجاح', 'تم تسجيل الدخول بنجاح!');
+      router.replace('/tabs/home');
+    } catch (err) {
+      console.error('Login error:', err);
+      Alert.alert('خطأ غير متوقع', 'حدث خطأ غير متوقع. حاول مرة أخرى.');
+    } finally {
+      setLoading(false);
     }
-
-    let message = 'حدث خطأ غير متوقع. حاول مرة أخرى.';
-
-    if (
-      error.code === 'auth/user-not-found' ||
-      error.code === 'auth/wrong-password'
-    ) {
-      message = 'البريد الإلكتروني أو كلمة المرور غير صحيحة.';
-    } else if (error.code === 'auth/invalid-email') {
-      message = 'البريد الإلكتروني غير صالح.';
-    }
-
-    Alert.alert('فشل في تسجيل الدخول', message);
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
 
   return (

@@ -1,7 +1,6 @@
-import { doc, getDoc } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
-import { auth, db } from '../../lib/firebase';
+import { supabase } from '../../lib/supabase';
 import GeneralHomeScreen from './generalhomescreen';
 import StudentHomeScreen from './studenthomescreen';
 
@@ -9,16 +8,31 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [isStudent, setIsStudent] = useState<boolean | null>(null);
 
-  useEffect(() => {
+useEffect(() => {
     const fetchUser = async () => {
-      const user = auth.currentUser;
-      if (user) {
-        const userDoc = await getDoc(doc(db, 'users', user.uid));
-        if (userDoc.exists()) {
-          const data = userDoc.data();
-          setIsStudent(data.isStudent === true);
-        }
+      const {
+        data: { user },
+        error: authError,
+      } = await supabase.auth.getUser();
+
+      if (authError || !user) {
+        console.error('Error fetching user:', authError?.message || 'No user');
+        setLoading(false);
+        return;
       }
+
+      const { data, error } = await supabase
+        .from('users')
+        .select('isStudent')
+        .eq('id', user.id)
+        .single();
+
+      if (error || !data) {
+        console.error('Error fetching user data:', error?.message);
+      } else {
+        setIsStudent(data.isStudent === true);
+      }
+
       setLoading(false);
     };
 

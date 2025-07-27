@@ -1,8 +1,5 @@
-import { auth, db } from '@/lib/firebase';
 import { Feather, Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { onAuthStateChanged, signOut } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -15,6 +12,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { supabase } from '../../lib/supabase';
 
 const ProfileScreen = () => {
   const [userData, setUserData] = useState<any>(null);
@@ -22,21 +20,38 @@ const ProfileScreen = () => {
   const router = useRouter();
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        const userDoc = await getDoc(doc(db, 'users', user.uid));
-        if (userDoc.exists()) {
-          setUserData(userDoc.data());
-        }
-        setLoading(false);
-      }
-    });
+  const fetchUserData = async () => {
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
 
-    return () => unsubscribe();
-  }, []);
+    if (userError || !user) {
+      router.replace('/signin');
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', user.id)
+      .single();
+
+    if (error || !data) {
+      console.log('خطأ في جلب بيانات المستخدم:', error);
+    } else {
+      setUserData(data);
+    }
+
+    setLoading(false);
+  };
+
+  fetchUserData();
+}, []);
+
 
   const handleLogout = async () => {
-    await signOut(auth);
+    await supabase.auth.signOut();
     router.replace('/signin');
   };
 
