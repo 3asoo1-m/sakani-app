@@ -1,106 +1,157 @@
-import { AntDesign, Entypo, FontAwesome, MaterialCommunityIcons } from '@expo/vector-icons'; // Google
+import { AntDesign, Entypo, FontAwesome, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
-    Alert,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  LayoutAnimation,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  useColorScheme,
+  View
 } from 'react-native';
 
 export default function SignUpScreen() {
   const router = useRouter();
   const [email, setEmail] = useState('');
+  const [emailError, setEmailError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const colorScheme = useColorScheme();
+  const isDarkMode = colorScheme === 'dark';
+
+  const backgroundColor = isDarkMode ? '#121212' : '#fff';
+  const textColor = isDarkMode ? '#fff' : '#000';
+  const inputBackground = isDarkMode ? '#333' : '#fff';
+  const inputBorderColor = emailError ? '#e74c3c' : isDarkMode ? '#555' : '#4a90e2';
+  const buttonBackground = isDarkMode ? '#1a73e8' : '#000';
+  const buttonTextColor = '#fff';
+  const dividerColor = isDarkMode ? '#555' : '#ccc';
+  const footerTextColor = isDarkMode ? '#aaa' : '#666';
+  const socialButtonBackground = isDarkMode ? '#222' : '#fff';
+  const socialButtonBorderColor = isDarkMode ? '#555' : '#ccc';
+  const socialButtonTextColor = isDarkMode ? '#eee' : '#000';
+
+  const arabicChars = /[\u0600-\u06FF]/;
 
   const handleContinue = () => {
-    // Regex بسيط لفحص البريد
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    const emailTrimmed = email.trim().toLowerCase();
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-    if (!email || !emailRegex.test(email)) {
-      Alert.alert('خطأ', 'يرجى إدخال بريد إلكتروني صحيح');
+    if (!email || !emailRegex.test(emailTrimmed)) {
+      setEmailError('يرجى إدخال بريد إلكتروني صالح');
       return;
     }
 
-    // إذا البريد صحيح → انتقل للصفحة التالية مع الباراميتر
-    router.push({
-      pathname: '/signupdetails',
-      params: { email }
-    });
+    if (arabicChars.test(emailTrimmed)) {
+      setEmailError('يرجى استخدام أحرف إنجليزية فقط في البريد الإلكتروني');
+      return;
+    }
+
+    setEmailError('');
+    setLoading(true);
+
+    const encodedEmail = encodeURIComponent(emailTrimmed);
+
+    // تأخير بسيط لمحاكاة تحميل
+    setTimeout(() => {
+      setLoading(false);
+      router.push(`/signupdetails?email=${encodedEmail}`);
+    }, 300);
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
-      {/* Title */}
-      <Text style={styles.header}>إنشاء حساب</Text>
+    <ScrollView 
+      contentContainerStyle={[styles.container, { backgroundColor }]} 
+      keyboardShouldPersistTaps="handled"
+    >
+      <Text style={[styles.header, { color: textColor }]}>إنشاء حساب</Text>
 
-      {/* Email input */}
       <TextInput
         textAlign='right'
         placeholder="البريد الالكتروني"
+        placeholderTextColor={isDarkMode ? '#bbb' : '#4a90e2'}
         value={email}
-        onChangeText={setEmail}
-        style={styles.input}
+        onChangeText={text => {
+          setEmail(text);
+          if (emailError) setEmailError('');
+        }}
+        style={[
+          styles.input, 
+          { 
+            backgroundColor: inputBackground, 
+            borderColor: inputBorderColor, 
+            color: textColor 
+          }
+        ]}
         autoCapitalize="none"
+        autoCorrect={false}
+        textContentType="emailAddress"
         keyboardType="email-address"
-        placeholderTextColor="#4a90e2"
       />
 
+      {emailError ? (
+        <Text style={{ color: '#e74c3c', alignSelf: 'flex-end', marginBottom: 10 }}>{emailError}</Text>
+      ) : null}
+
       <TouchableOpacity
-        style={styles.continueButton}
+        style={[styles.continueButton, { backgroundColor: buttonBackground }]}
         onPress={handleContinue}
+        disabled={loading}
         activeOpacity={0.8}
       >
-        <Text style={styles.continueButtonText}>الاستمرار</Text>
+        {loading ? (
+          <ActivityIndicator color={buttonTextColor} />
+        ) : (
+          <Text style={[styles.continueButtonText, { color: buttonTextColor }]}>الاستمرار</Text>
+        )}
       </TouchableOpacity>
 
-      {/* Already have account */}
       <View style={styles.loginContainer}>
         <TouchableOpacity onPress={() => router.push('/login')}>
-          <Text style={styles.loginLink}> تسجيل الدخول</Text>
+          <Text style={[styles.loginLink, { color: '#4a90e2' }]}> تسجيل الدخول</Text>
         </TouchableOpacity>
-        <Text style={styles.loginText}>لديك حساب بالفعل ؟</Text>
+        <Text style={[styles.loginText, { color: footerTextColor }]}>لديك حساب بالفعل ؟</Text>
       </View>
 
-      {/* Divider */}
       <View style={styles.dividerContainer}>
-        <View style={styles.divider} />
-        <Text style={styles.orText}>أو</Text>
-        <View style={styles.divider} />
+        <View style={[styles.divider, { backgroundColor: dividerColor }]} />
+        <Text style={[styles.orText, { color: footerTextColor }]}>أو</Text>
+        <View style={[styles.divider, { backgroundColor: dividerColor }]} />
       </View>
 
-      {/* Social buttons */}
-      <TouchableOpacity style={styles.socialButton} activeOpacity={0.8}>
-        <FontAwesome name="google" size={20} color="#000" style={styles.socialIcon} />
-        <Text style={styles.socialButtonText}>الاستمرار بواسطة Google</Text>
+      {/* أزرار التواصل الاجتماعي */}
+      <TouchableOpacity style={[styles.socialButton, { backgroundColor: socialButtonBackground, borderColor: socialButtonBorderColor }]} activeOpacity={0.8}>
+        <FontAwesome name="google" size={20} color={socialButtonTextColor} style={styles.socialIcon} />
+        <Text style={[styles.socialButtonText, { color: socialButtonTextColor }]}>الاستمرار بواسطة Google</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.socialButton} activeOpacity={0.8}>
-        <MaterialCommunityIcons name="facebook" size={20} color="#000" style={styles.socialIcon} />
-        <Text style={styles.socialButtonText}>الاستمرار بواسطة Facebook</Text>
+      <TouchableOpacity style={[styles.socialButton, { backgroundColor: socialButtonBackground, borderColor: socialButtonBorderColor }]} activeOpacity={0.8}>
+        <MaterialCommunityIcons name="facebook" size={20} color={socialButtonTextColor} style={styles.socialIcon} />
+        <Text style={[styles.socialButtonText, { color: socialButtonTextColor }]}>الاستمرار بواسطة Facebook</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.socialButton} activeOpacity={0.8}>
-        <AntDesign name="apple1" size={20} color="#000" style={styles.socialIcon} />
-        <Text style={styles.socialButtonText}>الاستمرار بواسطة Apple</Text>
+      <TouchableOpacity style={[styles.socialButton, { backgroundColor: socialButtonBackground, borderColor: socialButtonBorderColor }]} activeOpacity={0.8}>
+        <AntDesign name="apple1" size={20} color={socialButtonTextColor} style={styles.socialIcon} />
+        <Text style={[styles.socialButtonText, { color: socialButtonTextColor }]}>الاستمرار بواسطة Apple</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.socialButton} activeOpacity={0.8}>
-        <Entypo name="phone" size={20} color="#000" style={styles.socialIcon} />
-        <Text style={styles.socialButtonText}>الاستمرار بواسطة رقم هاتف</Text>
+      <TouchableOpacity style={[styles.socialButton, { backgroundColor: socialButtonBackground, borderColor: socialButtonBorderColor }]} activeOpacity={0.8}>
+        <Entypo name="phone" size={20} color={socialButtonTextColor} style={styles.socialIcon} />
+        <Text style={[styles.socialButtonText, { color: socialButtonTextColor }]}>الاستمرار بواسطة رقم هاتف</Text>
       </TouchableOpacity>
 
-      {/* Footer links */}
       <View style={styles.footer}>
         <TouchableOpacity>
-          <Text style={styles.footerLink}>الشروط والأحكام</Text>
+          <Text style={[styles.footerLink, { color: footerTextColor }]}>الشروط والأحكام</Text>
         </TouchableOpacity>
-        <Text style={styles.footerDivider}> | </Text>
+        <Text style={[styles.footerDivider, { color: footerTextColor }]}> | </Text>
         <TouchableOpacity>
-          <Text style={styles.footerLink}>سياسة الخصوصية</Text>
+          <Text style={[styles.footerLink, { color: footerTextColor }]}>سياسة الخصوصية</Text>
         </TouchableOpacity>
       </View>
     </ScrollView>
@@ -111,7 +162,6 @@ const styles = StyleSheet.create({
   container: {
     paddingTop: Platform.OS === 'ios' ? 80 : 50,
     paddingHorizontal: 30,
-    backgroundColor: '#fff',
     flexGrow: 1,
     alignItems: 'center',
   },
@@ -123,16 +173,13 @@ const styles = StyleSheet.create({
   input: {
     width: '100%',
     borderWidth: 1.5,
-    borderColor: '#4a90e2',
     borderRadius: 25,
     height: 50,
     paddingHorizontal: 20,
-    marginBottom: 20,
+    marginBottom: 10,
     fontSize: 16,
-    color: '#000',
   },
   continueButton: {
-    backgroundColor: '#000',
     width: '100%',
     borderRadius: 25,
     height: 50,
@@ -141,7 +188,6 @@ const styles = StyleSheet.create({
     marginBottom: 15,
   },
   continueButtonText: {
-    color: '#fff',
     fontSize: 16,
     fontWeight: '500',
   },
@@ -151,11 +197,9 @@ const styles = StyleSheet.create({
   },
   loginText: {
     fontSize: 14,
-    color: '#333',
   },
   loginLink: {
     fontSize: 14,
-    color: '#4a90e2',
     fontWeight: '500',
   },
   dividerContainer: {
@@ -167,31 +211,26 @@ const styles = StyleSheet.create({
   divider: {
     flex: 1,
     height: 1,
-    backgroundColor: '#ccc',
   },
   orText: {
     marginHorizontal: 8,
-    color: '#666',
     fontSize: 12,
   },
   socialButton: {
     flexDirection: 'row',
     borderWidth: 1,
-    borderColor: '#ccc',
     borderRadius: 25,
     height: 50,
     alignItems: 'center',
     justifyContent: 'center',
     width: '100%',
     marginBottom: 12,
-    backgroundColor: '#fff',
   },
   socialIcon: {
     marginRight: 8,
   },
   socialButtonText: {
     fontSize: 14,
-    color: '#000',
   },
   footer: {
     flexDirection: 'row',
@@ -199,10 +238,9 @@ const styles = StyleSheet.create({
   },
   footerLink: {
     fontSize: 12,
-    color: '#666',
   },
   footerDivider: {
-    color: '#666',
     marginHorizontal: 5,
+    fontSize: 12,
   },
 });

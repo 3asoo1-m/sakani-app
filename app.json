@@ -9,14 +9,19 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.3asoo1m.sakaniapp",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "package": "com.mdamo.sakani"
     },
     "web": {
       "bundler": "metro",
@@ -41,9 +46,8 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "c5497dae-cc25-4b54-b00e-2e5bfedac79f"
+        "projectId": "4575c306-2cd4-4bc1-81c2-678596abcd50"
       }
-    },
-    "owner": "3asoo1m"
+    }
   }
 }

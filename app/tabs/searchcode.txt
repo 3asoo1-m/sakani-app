@@ -1,0 +1,43 @@
+<View style={styles.searchBar}>
+          <TextInput placeholder="ابحث عن سكن..." style={styles.input} placeholderTextColor="#999" />
+          <TouchableOpacity style={styles.searchButton}>
+            <Ionicons name="search" size={20} color="#fff" />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.filterButton}>
+            <Feather name="filter" size={20} color="#4caf50" />
+          </TouchableOpacity>
+        </View>
+
+
+
+searchBar: {
+  flexDirection: 'row-reverse',
+  alignItems: 'center',
+  backgroundColor: '#fff',
+  borderRadius: 50,
+  paddingHorizontal: 16,
+  paddingVertical: 8,
+  shadowColor: '#000',
+  shadowOpacity: 0.05,
+  shadowRadius: 5,
+  elevation: 3,
+  width: '100%',
+},
+input: {
+  flex: 1,
+  color: '#333',
+  textAlign: 'right',
+  fontSize: 14,
+  paddingHorizontal: 10,
+},
+searchButton: {
+    backgroundColor: '#4caf50',
+    padding: 10,
+    borderRadius: 30,
+    marginLeft: 10,
+  },
+filterButton: {
+    padding: 10,
+    backgroundColor: '#eee',
+    borderRadius: 30,
+  },
