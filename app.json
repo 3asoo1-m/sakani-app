@@ -12,7 +12,16 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.3asoo1m.sakaniapp",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSUserTrackingUsageDescription": "This identifier will be used to deliver personalized ads to you.",
+        "SKAdNetworkItems": [
+          {
+            "SKAdNetworkIdentifier": "v9wttpbfk9.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "n38lu8286q.skadnetwork"
+          }
+        ]
       }
     },
     "android": {
@@ -49,6 +58,7 @@
       "eas": {
         "projectId": "4575c306-2cd4-4bc1-81c2-678596abcd50"
       }
-    }
+    },
+    "owner": "3asoo1"
   }
 }

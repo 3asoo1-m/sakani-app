@@ -14,6 +14,19 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '../../lib/supabase';
 
+function translateGender(genderArabic: string):string{
+  switch (genderArabic) {
+    case 'female':
+      return 'أنثى';
+    case 'male':
+      return 'ذكر';
+    case 'both':
+      return 'أفضل عدم الإجابة';
+    default:
+      return 'غير معروف'; // القيمة الافتراضية
+  }
+}
+
 const ProfileScreen = () => {
   const [userData, setUserData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -32,7 +45,7 @@ const ProfileScreen = () => {
     }
 
     const { data, error } = await supabase
-      .from('users')
+      .from('profiles')
       .select('*')
       .eq('id', user.id)
       .single();
@@ -104,10 +117,11 @@ const ProfileScreen = () => {
         <View style={styles.card}>
           <Item icon={<Feather name="mail" size={20} color="#444" />} label="البريد الإلكتروني" value={userData.email} />
           <Item icon={<Feather name="calendar" size={20} color="#444" />} label="تاريخ الميلاد" value={userData.birthday} />
-          <Item icon={<Feather name="map-pin" size={20} color="#444" />} label="المدينة" value={userData.city} />
-          <Item icon={<Ionicons name="school-outline" size={20} color="#444" />} label="طالب جامعي؟" value={userData.isStudent ? 'نعم' : 'لا'} />
-          {userData.isStudent && userData.universityName && (
-            <Item icon={<Ionicons name="business-outline" size={20} color="#444" />} label="اسم الجامعة" value={userData.universityName} />
+          <Item icon={<Feather name="user" size={20} color="#444" />}label="الجنس" value={translateGender(userData.gender)} />
+       <Item icon={<Feather name="map-pin" size={20} color="#444" />} label="المدينة" value={userData.city || ''} />
+          <Item icon={<Ionicons name="school-outline" size={20} color="#444" />} label="طالب جامعي؟" value={userData.isstudent ? 'نعم' : 'لا'} />
+          {userData.isstudent && userData.university && (
+            <Item icon={<Ionicons name="business-outline" size={20} color="#444" />} label="اسم الجامعة" value={userData.university} />
           )}
         </View>
 

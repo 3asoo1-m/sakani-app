@@ -1,3 +1,4 @@
+//signin.tsx
 import { AntDesign, Feather, FontAwesome } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React from 'react';
@@ -22,7 +23,7 @@ export default function SignInScreen() {
 
       {/* Title */}
       <Text style={styles.title}>
-        مرحبا بك
+        مرحبا بك في سكني
       </Text>
 
       {/* Buttons */}

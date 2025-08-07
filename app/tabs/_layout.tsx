@@ -1,8 +1,49 @@
 import { FontAwesome } from '@expo/vector-icons';
-import { Tabs } from 'expo-router';
-import React from 'react';
+import { Redirect, Tabs } from 'expo-router';
+import React, { useEffect, useState } from 'react';
+import { supabase } from '../../lib/supabase';
 
 export default function TabLayout() {
+  const [isLoading, setIsLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      const {
+        data: { session },
+        error,
+      } = await supabase.auth.getSession();
+
+      if (error) {
+        console.log('Error getting session:', error.message);
+        setIsAuthenticated(false);
+      } else {
+        setIsAuthenticated(!!session?.user);
+      }
+      setIsLoading(false);
+    };
+
+    // Check once on mount
+    checkAuth();
+
+    // Subscribe to auth changes
+    const { data: authListener } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        setIsAuthenticated(!!session?.user);
+      }
+    );
+
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
+  }, []);
+
+  if (isLoading) return null;
+
+  if (!isAuthenticated) {
+    return <Redirect href="/login" />;
+  }
+
   return (
     <Tabs
       screenOptions={({ route }) => ({

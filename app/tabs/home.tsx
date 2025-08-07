@@ -1,43 +1,74 @@
+import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, View } from 'react-native';
+import { ActivityIndicator, FlatList, Text, View } from 'react-native';
+import ApartmentCard from '../../lib/AppartmentCard';
 import { supabase } from '../../lib/supabase';
-import GeneralHomeScreen from './generalhomescreen';
-import StudentHomeScreen from './studenthomescreen';
 
 export default function Home() {
-  const [loading, setLoading] = useState(true);
-  const [isStudent, setIsStudent] = useState<boolean | null>(null);
+  const router = useRouter();
 
-useEffect(() => {
-    const fetchUser = async () => {
+  const [profile, setProfile] = useState<any>(null);
+  const [apartments, setApartments] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    setLoading(true);
+
+    try {
       const {
         data: { user },
-        error: authError,
       } = await supabase.auth.getUser();
 
-      if (authError || !user) {
-        console.error('Error fetching user:', authError?.message || 'No user');
+      if (!user) {
         setLoading(false);
         return;
       }
 
-      const { data, error } = await supabase
-        .from('users')
-        .select('isStudent')
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
         .eq('id', user.id)
         .single();
 
-      if (error || !data) {
-        console.error('Error fetching user data:', error?.message);
-      } else {
-        setIsStudent(data.isStudent === true);
+      if (profileError || !profileData) {
+        console.log('خطأ في جلب الملف الشخصي:', profileError);
+        setLoading(false);
+        return;
       }
 
-      setLoading(false);
-    };
+      setProfile(profileData);
 
-    fetchUser();
-  }, []);
+      let query = supabase.from('apartments').select('*').eq('status', 'available');
+
+      query = query.eq('city', profileData.city);
+
+      if (profileData.isstudent) {
+        query = query.eq('near_university', true);
+      }
+
+      if (profileData.gender) {
+        query = query.or(`gender_prefer.eq.${profileData.gender},gender_prefer.is.null`);
+      }
+
+      const { data: apartmentsData, error: apartmentsError } = await query;
+
+      if (apartmentsError) {
+        console.log('خطأ في جلب الشقق:', apartmentsError);
+        setLoading(false);
+        return;
+      }
+
+      setApartments(apartmentsData || []);
+    } catch (error) {
+      console.log('خطأ عام:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -47,5 +78,29 @@ useEffect(() => {
     );
   }
 
-  return isStudent ? <StudentHomeScreen /> : <GeneralHomeScreen />;
+  return (
+    <View style={{ flex: 1, padding: 20 }}>
+      <Text style={{ fontSize: 22, marginBottom: 15 }}>
+        مرحباً، {profile?.fullname || 'مستخدم'}
+      </Text>
+
+      <FlatList
+        data={apartments}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => (
+          <ApartmentCard
+            title={item.title}
+            imageUri={item.image_url}
+            price={item.price.toString()}
+            status={item.status}
+            onPress={() => router.push({
+              pathname: '/appartments/[id]',
+              params: { id: item.id }
+              })}
+          />
+        )}
+        ListEmptyComponent={<Text>لا توجد شقق متاحة حالياً تناسب ملفك.</Text>}
+      />
+    </View>
+  );
 }

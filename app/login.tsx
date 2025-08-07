@@ -17,20 +17,18 @@ import { supabase } from '../lib/supabase';
 
 export default function LoginScreen() {
   const router = useRouter();
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
+  const isDark = useColorScheme() === 'dark';
+  const styles = getStyles(isDark);
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [emailError, setEmailError] = useState('');
   const [passwordError, setPasswordError] = useState('');
-  const styles = getStyles(isDark);
 
   const handleLogin = async () => {
-   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  
-    let hasError = false;
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  let hasError = false;
 
   if (!email || !emailRegex.test(email)) {
     setEmailError('يرجى إدخال بريد إلكتروني صحيح');
@@ -50,31 +48,70 @@ export default function LoginScreen() {
 
   setLoading(true);
   try {
-  const { data, error } = await supabase.auth.signInWithPassword({
-        email: email.trim(),
-        password: password.trim(),
-      });
+    const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+      email: email.trim(),
+      password: password.trim(),
+    });
 
-      if (error) {
-        console.log('Supabase auth error:', error.message);
-        let message = 'حدث خطأ أثناء تسجيل الدخول. حاول مرة أخرى.';
-        if (error.message.includes('Invalid login credentials')) {
-          message = 'البريد الإلكتروني أو كلمة المرور غير صحيحة.';
-        }
-        Alert.alert('خطأ في تسجيل الدخول', message);
-        return;
+    if (signInError) {
+      let message = 'حدث خطأ أثناء تسجيل الدخول. حاول مرة أخرى.';
+      if (signInError.message.includes('Invalid login credentials')) {
+        message = 'البريد الإلكتروني أو كلمة المرور غير صحيحة.';
       }
-
-      // نجاح تسجيل الدخول
-      Alert.alert('نجاح', 'تم تسجيل الدخول بنجاح!');
-      router.replace('/tabs/home');
-    } catch (err) {
-      console.error('Login error:', err);
-      Alert.alert('خطأ غير متوقع', 'حدث خطأ غير متوقع. حاول مرة أخرى.');
-    } finally {
+      if (signInError.message.includes('Email not confirmed')) {
+        message = 'يرجى تأكيد البريد الإلكتروني قبل تسجيل الدخول.';
+      }
+      console.log(signInError);
+      Alert.alert('خطأ في تسجيل الدخول', message);
       setLoading(false);
+      return;
     }
-  };
+
+    const user = signInData.user;
+    console.log('User ID from auth:', user?.id);
+
+    if (!user) {
+      Alert.alert('خطأ', 'لم يتم العثور على المستخدم.');
+      setLoading(false);
+      return;
+    }
+
+    // ✅ تحقق أولًا من تأكيد البريد الإلكتروني
+    if (!user.email_confirmed_at) {
+      await supabase.auth.signOut();
+      Alert.alert(
+        'تأكيد البريد الإلكتروني',
+        'يرجى تأكيد بريدك الإلكتروني أولاً. تحقق من صندوق الوارد أو مجلد السبام.'
+      );
+      router.replace('/tabs/verify-email');
+      setLoading(false);
+      return;
+    }
+
+    // ✅ بعد التأكد من البريد، جلب بيانات المستخدم من جدول profiles
+    const { data: userData, error: userDataError } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', user.id)
+      .single();
+
+    if (userDataError) {
+      console.error('Error fetching user data:', userDataError);
+      Alert.alert('خطأ', 'تعذر تحميل بيانات المستخدم.');
+      setLoading(false);
+      return;
+    }
+
+    Alert.alert('نجاح', 'تم تسجيل الدخول بنجاح!');
+    console.log("USER DATA AFTER LOGIN:", JSON.stringify(user, null, 2));
+    router.replace('/tabs/home');
+  } catch (err) {
+    console.error('Login error:', err);
+    Alert.alert('خطأ غير متوقع', 'حدث خطأ غير متوقع. حاول مرة أخرى.');
+  } finally {
+    setLoading(false);
+  }
+};
 
 
   return (
@@ -84,51 +121,41 @@ export default function LoginScreen() {
       keyboardVerticalOffset={Platform.OS === 'ios' ? 60 : 0}
     >
       <ScrollView contentContainerStyle={styles.innerContainer} keyboardShouldPersistTaps="handled">
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+        <TouchableOpacity style={styles.backButton} onPress={() => router.replace('/signin')}>
           <AntDesign name="arrowleft" size={24} color={isDark ? '#fff' : '#4a90e2'} />
         </TouchableOpacity>
 
         <Text style={styles.title}>تسجيل الدخول</Text>
 
         <TextInput
-  style={[
-    styles.input,
-    emailError ? { borderColor: 'red' } : {},
-  ]}
-  placeholder="البريد الإلكتروني"
-  placeholderTextColor={isDark ? '#aaa' : '#666'}
-  keyboardType="email-address"
-  autoCapitalize="none"
-  value={email}
-  onChangeText={(text) => {
-    setEmail(text);
-    if (text) setEmailError('');
-  }}
-  returnKeyType="next"
-/>
-{emailError ? (
-  <Text style={styles.errorText}>{emailError}</Text>
-) : null}
+          style={[styles.input, emailError ? { borderColor: 'red' } : {}]}
+          placeholder="البريد الإلكتروني"
+          placeholderTextColor={isDark ? '#aaa' : '#666'}
+          keyboardType="email-address"
+          autoCapitalize="none"
+          value={email}
+          onChangeText={(text) => {
+            setEmail(text);
+            if (text) setEmailError('');
+          }}
+          returnKeyType="next"
+        />
+        {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
 
         <TextInput
-  style={[
-    styles.input,
-    passwordError ? { borderColor: 'red' } : {},
-  ]}
-  placeholder="كلمة المرور"
-  placeholderTextColor={isDark ? '#aaa' : '#666'}
-  secureTextEntry
-  value={password}
-  onChangeText={(text) => {
-    setPassword(text);
-    if (text) setPasswordError('');
-  }}
-  returnKeyType="done"
-  onSubmitEditing={handleLogin}
-/>
-{passwordError ? (
-  <Text style={styles.errorText}>{passwordError}</Text>
-) : null}
+          style={[styles.input, passwordError ? { borderColor: 'red' } : {}]}
+          placeholder="كلمة المرور"
+          placeholderTextColor={isDark ? '#aaa' : '#666'}
+          secureTextEntry
+          value={password}
+          onChangeText={(text) => {
+            setPassword(text);
+            if (text) setPasswordError('');
+          }}
+          returnKeyType="done"
+          onSubmitEditing={handleLogin}
+        />
+        {passwordError ? <Text style={styles.errorText}>{passwordError}</Text> : null}
 
         <TouchableOpacity
           style={[styles.loginButton, loading && { opacity: 0.7 }]}
@@ -144,7 +171,10 @@ export default function LoginScreen() {
         </TouchableOpacity>
 
         <TouchableOpacity onPress={() => router.push('/forgotpassword')}>
-          <Text style={styles.forgotPasswordText}>نسيت كلمة المرور؟</Text>
+          <Text style={styles.forgotPasswordText}>هل نسيت كلمة المرور؟</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => router.push('/signup')}>
+          <Text style={styles.forgotPasswordText}>ليس لديك حساب؟</Text>
         </TouchableOpacity>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -204,14 +234,15 @@ const getStyles = (isDark: boolean) =>
     },
     forgotPasswordText: {
       color: isDark ? '#4a90e2' : '#0066cc',
+      margin: 7,
       fontSize: 14,
-      fontWeight: '500',
+      fontWeight: '800',
     },
     errorText: {
-  color: 'red',
-  fontSize: 13,
-  marginTop: -15,
-  marginBottom: 10,
-  alignSelf: 'flex-start',
-},
+      color: 'red',
+      fontSize: 13,
+      marginTop: -15,
+      marginBottom: 10,
+      alignSelf: 'flex-start',
+    },
   });

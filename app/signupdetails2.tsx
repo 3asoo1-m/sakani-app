@@ -14,6 +14,7 @@ import {
   useColorScheme,
   View,
 } from 'react-native';
+
 import { supabase } from '../lib/supabase';
 
 export default function SignUpPasswordScreen() {
@@ -22,73 +23,69 @@ export default function SignUpPasswordScreen() {
     email,
     fullname,
     birthday,
+    gender,
     city,
     isStudent,
     universityName = 'No uni',
   } = useLocalSearchParams();
 
-  // دالة عامة لفك الترميز مع التعامل مع array
   const getStringParam = (param: string | string[] | undefined): string => {
     if (!param) return '';
     if (Array.isArray(param)) return param[0];
     return param;
   };
 
-  // فك ترميز القيم
   const emailDecoded = decodeURIComponent(getStringParam(email));
   const fullnameDecoded = decodeURIComponent(getStringParam(fullname));
-  const birthdayDecoded = decodeURIComponent(getStringParam(birthday));
+  const birthdayDecodedRaw = decodeURIComponent(getStringParam(birthday));
   const cityDecoded = decodeURIComponent(getStringParam(city));
-const isStudentDecoded = decodeURIComponent(getStringParam(isStudent)) === 'true';
+  const genderDecoded = decodeURIComponent(getStringParam(gender));
+  const isStudentDecoded = decodeURIComponent(getStringParam(isStudent)) === 'true';
   const universityNameDecoded = decodeURIComponent(getStringParam(universityName));
+  const birthdayDecoded = birthdayDecodedRaw;
+
 
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // حالتان لإظهار/إخفاء كلمة المرور منفصلتان لكل حقل
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const isDark = useColorScheme() === 'dark';
   const styles = getStyles(isDark);
 
-  const validatePassword = (password: string): string | null=> {
-    if (password.length < 8) {
-      return 'يجب ان تكون كلمة المرور 8 أحرف على الأقل';
-    }
-    if (!/[A-Z]/.test(password)) {
-    return 'يجب أن تحتوي كلمة المرور على حرف كبير واحد على الأقل';
-    }
-    if (!/[a-z]/.test(password)) {
-    return 'يجب أن تحتوي كلمة المرور على حرف صغير واحد على الأقل';
-    }
-    if (!/[0-9]/.test(password)) {
-    return 'يجب أن تحتوي كلمة المرور على رقم واحد على الأقل';
-    }
-    if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
-    return 'يجب أن تحتوي كلمة المرور على رمز خاص واحد على الأقل';
-    }
+  const validatePassword = (password: string): string | null => {
+    if (password.length < 8) return 'يجب ان تكون كلمة المرور 8 أحرف على الأقل';
+    if (!/[A-Z]/.test(password)) return 'يجب أن تحتوي كلمة المرور على حرف كبير واحد على الأقل';
+    if (!/[a-z]/.test(password)) return 'يجب أن تحتوي كلمة المرور على حرف صغير واحد على الأقل';
+    if (!/[0-9]/.test(password)) return 'يجب أن تحتوي كلمة المرور على رقم واحد على الأقل';
+    if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) return 'يجب أن تحتوي كلمة المرور على رمز خاص واحد على الأقل';
     return null;
-  }
+  };
+
+  console.log('emailDecoded:', emailDecoded);
+  console.log('fullnameDecoded:', fullnameDecoded);
+  console.log('birthdayDecoded:', birthdayDecoded);
+  console.log('genderDecoded:', genderDecoded);
+  console.log('cityDecoded:', cityDecoded);
+  console.log('isStudentDecoded:', isStudentDecoded);
+  console.log('universityNameDecoded:', universityNameDecoded);
+
   const handleSignUp = async () => {
-    // التحقق من البيانات الأساسية
     if (!emailDecoded || !fullnameDecoded || !birthdayDecoded || !cityDecoded) {
       Alert.alert('خطأ', 'بيانات التسجيل غير كاملة، يرجى العودة وتعبئة جميع الخطوات.');
       return;
     }
-
     if (!password || !confirmPassword) {
       Alert.alert('خطأ', 'يرجى تعبئة كل الحقول');
       return;
     }
-
     const errorMessage = validatePassword(password);
     if (errorMessage) {
       Alert.alert('كلمة المرور غير صالحة', errorMessage);
       return;
     }
-    
     if (password !== confirmPassword) {
       Alert.alert('عدم تطابق', 'كلمتا المرور غير متطابقتين');
       return;
@@ -97,38 +94,52 @@ const isStudentDecoded = decodeURIComponent(getStringParam(isStudent)) === 'true
     setLoading(true);
 
     try {
-      const { data, error: signUpError } = await supabase.auth.signUp({
-      email: emailDecoded,
-      password,
-    });
+      // 1. تسجيل المستخدم في Supabase Auth
+      const { data, error } = await supabase.auth.signUp({
+        email: emailDecoded,
+        password: password,
+      });
 
-    if (signUpError) throw signUpError;
+      if (error) {
+        Alert.alert('خطأ', error.message);
+        setLoading(false);
+        return;
+      }
+      if (!data || !data.user) {
+        Alert.alert('خطأ', 'تعذر إنشاء حساب المستخدم.');
+        setLoading(false);
+        return;
+      }
 
-    const user = data.user;
-    if (!user) throw new Error('فشل إنشاء المستخدم');
+      // 2. إضافة بيانات المستخدم الإضافية في جدول profiles
+      const { error: insertError } = await supabase.from('profiles').insert({
+        id: data.user.id, // uid المستخدم في سوبابيز
+        fullname: fullnameDecoded,
+        birthday: birthdayDecoded,
+        email: emailDecoded,
+        city: cityDecoded,
+        gender: genderDecoded,
+        isstudent: isStudentDecoded,
+        university: universityNameDecoded,
+      });
 
-    // إضافة معلومات إضافية في جدول users
-    const { error: dbError } = await supabase.from('users').insert({
-      id: user.id,
-      fullname: fullnameDecoded,
-      birthday: birthdayDecoded,
-      city: cityDecoded,
-      isStudent: isStudentDecoded,
-      universityName: universityNameDecoded,
-      email: emailDecoded,
-      createdAt: new Date().toISOString(),
-    });
+      if (insertError) {
+        Alert.alert('خطأ', insertError.message);
+        setLoading(false);
+        return;
+      }
 
-    if (dbError) throw dbError;
+      Alert.alert(
+        'تحقق من بريدك الإلكتروني',
+        'تم إرسال رسالة تأكيد إلى بريدك الإلكتروني، يرجى التحقق منها قبل تسجيل الدخول.'
+      );
 
-    Alert.alert('تم', 'تم إنشاء الحساب بنجاح');
-    router.replace('/login');
-  } catch (error: any) {
-    console.error(error);
-    Alert.alert('خطأ', error.message || 'حدث خطأ أثناء إنشاء الحساب');
-  } finally {
-    setLoading(false);
-  }
+      router.replace('/login');
+    } catch (error: any) {
+      Alert.alert('خطأ', error.message || 'حدث خطأ أثناء إنشاء الحساب');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -137,14 +148,12 @@ const isStudentDecoded = decodeURIComponent(getStringParam(isStudent)) === 'true
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <ScrollView contentContainerStyle={styles.innerContainer} keyboardShouldPersistTaps="handled">
-        {/* زر الرجوع */}
         <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
           <AntDesign name="arrowleft" size={24} color={isDark ? '#fff' : '#4a90e2'} />
         </TouchableOpacity>
 
         <Text style={styles.title}>كلمة المرور</Text>
 
-        {/* كلمة المرور */}
         <View style={styles.passwordInputContainer}>
           <TextInput
             style={[styles.input, { flex: 1 }]}
@@ -166,7 +175,6 @@ const isStudentDecoded = decodeURIComponent(getStringParam(isStudent)) === 'true
           </TouchableOpacity>
         </View>
 
-        {/* تأكيد كلمة المرور */}
         <View style={styles.passwordInputContainer}>
           <TextInput
             style={[styles.input, { flex: 1 }]}

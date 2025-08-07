@@ -1,6 +1,6 @@
 import { AntDesign } from '@expo/vector-icons';
 import React from 'react';
-import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { GestureResponderEvent, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 type ApartmentCardProps = {
   imageUri: string;
@@ -9,6 +9,7 @@ type ApartmentCardProps = {
   status: 'available' | 'booked';
   isFavorite?: boolean;
   onFavoriteToggle?: () => void;
+  onPress?: (event: GestureResponderEvent) => void; // <--- أضفنا onPress
 };
 
 export default function ApartmentCard({
@@ -18,9 +19,10 @@ export default function ApartmentCard({
   status,
   isFavorite = false,
   onFavoriteToggle,
+  onPress,
 }: ApartmentCardProps) {
   return (
-    <View style={styles.card}>
+    <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.8}>
       <Image source={{ uri: imageUri }} style={styles.image} />
 
       <View style={styles.infoContainer}>
@@ -50,7 +52,7 @@ export default function ApartmentCard({
           )}
         </View>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 }
 

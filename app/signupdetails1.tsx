@@ -1,3 +1,4 @@
+//signupdetail1.tsx
 import { AntDesign } from '@expo/vector-icons'; // أيقونة السهم للرجوع
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useState } from 'react';
@@ -29,6 +30,7 @@ export default function SignUpExtraScreen() {
   // قراءة القيم مع تأمينها
   const params = useLocalSearchParams();
   const email = decodeURIComponent(getStringParam(params.email));
+  const gender = decodeURIComponent(getStringParam(params.gender));
   const fullName = decodeURIComponent(getStringParam(params.fullname));
   const birthday = decodeURIComponent(getStringParam(params.birthday));
 
@@ -74,6 +76,7 @@ export default function SignUpExtraScreen() {
         fullname: encodeURIComponent(fullName),
         birthday: encodeURIComponent(birthday),
         city: encodeURIComponent(city),
+        gender: encodeURIComponent(gender),
         isStudent: encodeURIComponent(isStudent),
         universityName: encodeURIComponent(isStudent ? universityName : ''),
       },

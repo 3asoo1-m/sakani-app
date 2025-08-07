@@ -1,7 +1,7 @@
 import * as AuthSession from 'expo-auth-session';
 import { FacebookAuthProvider, signInWithCredential } from "firebase/auth";
 import React from 'react';
-import { auth } from '../lib/firebase'; // عدل حسب مكان ملف firebase
+//import { auth } from '../lib/firebase'; // عدل حسب مكان ملف firebase
 
 const FB_APP_ID = '766091355879479';
 

@@ -1,3 +1,4 @@
+//signupdetails.tsx
 import { AntDesign } from '@expo/vector-icons';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -5,23 +6,33 @@ import React, { useState } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
-  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
-  useColorScheme
+  useColorScheme,
+  View
 } from 'react-native';
+import DropDownPicker from 'react-native-dropdown-picker';
 
 export default function SignupInfoScreen() {
   const router = useRouter();
   const { email } = useLocalSearchParams();
   const emailDecoded = decodeURIComponent(Array.isArray(email) ? email[0] : email);
   const [fullName, setFullName] = useState('');
+
+  const [genderOpen, setGenderOpen] = useState(false);
+  const [gender, setGender] = useState<string | null>(null);
+  const [genderItems, setGenderItems] = useState([
+        { label: 'ذكر', value: 'male' },
+        { label: 'أنثى', value: 'female' },
+        { label: 'أفضل عدم الإجابة', value: 'both' },
+      ]);
   const [birthday, setBirthday] = useState<Date | null>(null);
   const [showDatePicker, setShowDatePicker] = useState(false);
 
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark';
+  const borderColor = isDarkMode ? '#4a90e2' : '#4a90e2';
 
   const backgroundColor = isDarkMode ? '#121212' : '#fff';
   const textColor = isDarkMode ? '#fff' : '#000';
@@ -55,13 +66,19 @@ export default function SignupInfoScreen() {
       alert('يرجى اختيار تاريخ الميلاد');
       return;
     }
+    if (!gender) {
+      alert('يرجى اختيار الجنس');
+      return;
+    }
+    
 
     const encodedEmail = encodeURIComponent(emailDecoded);
+    const encodedGender = encodeURIComponent(gender);
     const encodedFullName = encodeURIComponent(fullName);
     const encodedBirthday = encodeURIComponent(formatDate(birthday));
 
     router.push(
-      `/signupdetails1?email=${encodedEmail}&fullname=${encodedFullName}&birthday=${encodedBirthday}`
+      `/signupdetails1?email=${encodedEmail}&fullname=${encodedFullName}&birthday=${encodedBirthday}&gender=${encodedGender}`
     );
   };
 
@@ -71,7 +88,7 @@ export default function SignupInfoScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 60 : 0}
     >
-      <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
+      <View style={styles.scrollContainer}>
         {/* زر الرجوع */}
         <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
           <AntDesign name="arrowleft" size={24} color="#4a90e2" />
@@ -89,6 +106,21 @@ export default function SignupInfoScreen() {
           returnKeyType="done"
           textAlign="right"
         />
+        <DropDownPicker
+          open={genderOpen}
+          value={gender}
+          items={genderItems}
+          setOpen={setGenderOpen}
+          setValue={setGender}
+          setItems={setGenderItems}
+          placeholder="اختر الجنس"
+          containerStyle={styles.dropdownContainer}
+          style={[styles.dropdown, { backgroundColor: inputBackground, borderColor }]}
+          dropDownContainerStyle={[styles.dropdownList, { backgroundColor: inputBackground }]}
+          zIndex={3000}
+          zIndexInverse={1000}
+          textStyle={{ color: textColor, textAlign: 'right' }}
+        />
 
         {/* اختيار تاريخ الميلاد */}
         <TouchableOpacity
@@ -103,7 +135,7 @@ export default function SignupInfoScreen() {
         {showDatePicker && (
           <DateTimePicker
             testID="dateTimePicker"
-            value={birthday || new Date(2000, 0, 1)} // قيمة مبدئية
+            value={birthday || new Date(1998, 0, 1)} // قيمة مبدئية
             mode="date"
             display={Platform.OS === 'ios' ? 'spinner' : 'calendar'}
             onChange={onChange}
@@ -119,7 +151,7 @@ export default function SignupInfoScreen() {
         >
           <Text style={[styles.continueButtonText, { color: buttonTextColor }]}>استمرار</Text>
         </TouchableOpacity>
-      </ScrollView>
+      </View>
     </KeyboardAvoidingView>
   );
 }
@@ -145,6 +177,26 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 20,
     textAlign: 'center',
+  },
+  dropdownContainer: {
+    width: '100%',
+    marginBottom: 20,
+    zIndex: 3000,
+  },
+  dropdown: {
+    borderWidth: 1.5,
+    borderRadius: 10,
+  },
+  dropdownList: {
+    borderWidth: 1.5,
+    borderRadius: 10,
+  },
+  switchContainer: {
+    width: '100%',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
   },
   input: {
     borderWidth: 1,

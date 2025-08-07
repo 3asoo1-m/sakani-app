@@ -1,0 +1,37 @@
+sakani-app/
+          |-----/ APP 
+          |    |-----+not-found.tsx
+          |    |-----account-disabled.tsx
+          |    |-----contact-support.tsx
+          |    |-----forgotpassword.tsx
+          |    |-----index.tsx
+          |    |-----login.tsx
+          |    |-----profile.tsx
+          |    |-----signin.tsx
+          |    |-----signup.tsx
+          |    |-----signupdetails.tsx
+          |    |-----signupdetails1.tsx
+          |    |-----signupdetails2.tsx
+          |    |-----_layout.tsx
+          |
+          |
+          |-----/ tabs
+          |    |------admin.tsx
+          |    |------favorite.tsx
+          |    |------generalhomescreen.tsx
+          |    |------home.tsx
+          |    |------notifications.tsx
+          |    |------prof.txt
+          |    |------profile.tsx
+          |    |------search.tsx
+          |    |------searchcode.txt
+          |    |------studenthomescreen.tsx
+          |    |------_layout.tsx
+          |
+          |
+          |-----/lib
+          |    |------ApartmentCard.tsx
+          |    |------facebookLogin.ts
+          |    |------supabase.js
+          |    |------useUserData.ts
+          |    |
