@@ -1,7 +1,9 @@
+//app/tabs/_layout.tsx
 import { FontAwesome } from '@expo/vector-icons';
 import { Redirect, Tabs } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabase';
+
 
 export default function TabLayout() {
   const [isLoading, setIsLoading] = useState(true);

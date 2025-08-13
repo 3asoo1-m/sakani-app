@@ -1,0 +1,192 @@
+
+import { Ionicons } from '@expo/vector-icons';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import React, { useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  FlatList,
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import { supabase } from '../../lib/supabase';
+
+export default function ApartmentDetails() {
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const router = useRouter();
+
+  const [apartment, setApartment] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!id) return;
+
+    const fetchApartment = async () => {
+      setLoading(true);
+
+      const { data, error } = await supabase
+        .from('apartments')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+      if (error || !data) {
+        console.log('خطأ في جلب بيانات الشقة:', error);
+        router.back();
+      } else {
+        setApartment(data);
+      }
+
+      setLoading(false);
+    };
+
+    fetchApartment();
+  }, [id]);
+
+  if (loading) {
+    return (
+      <View style={styles.centered}>
+        <ActivityIndicator size="large" color="#1D9BF0" />
+      </View>
+    );
+  }
+
+  if (!apartment) {
+    return (
+      <View style={styles.centered}>
+        <Text>لم يتم العثور على تفاصيل الشقة.</Text>
+      </View>
+    );
+  }
+
+  const images = apartment.images || [apartment.image_url];
+
+  return (
+    <ScrollView contentContainerStyle={styles.container}>
+      <FlatList
+        data={images}
+        keyExtractor={(item, index) => index.toString()}
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        renderItem={({ item }) => (
+          <Image source={{ uri: item }} style={styles.image} />
+        )}
+        style={{ marginBottom: 15 }}
+      />
+
+      <View style={styles.header}>
+        <Text style={styles.title}>{apartment.title}</Text>
+        <TouchableOpacity>
+          <Ionicons name="heart-outline" size={24} color="gray" />
+        </TouchableOpacity>
+      </View>
+
+      <Text style={styles.address}>{apartment.city}</Text>
+
+      <View style={styles.detailsRow}>
+        <Text style={styles.detail}>السعر: {apartment.price} شيكل</Text>
+        <Text style={styles.detail}>
+          النوع: {apartment.type === 'shared' ? 'مشترك' : 'خاص'}
+        </Text>
+      </View>
+
+      <View style={styles.detailsRow}>
+        <Text style={styles.detail}>
+          الجنس المفضل: {apartment.gender_prefer || 'غير محدد'}
+        </Text>
+        <Text style={styles.detail}>
+          قريب من الجامعة: {apartment.near_university ? 'نعم' : 'لا'}
+        </Text>
+      </View>
+
+      <View style={styles.descriptionBox}>
+        <Text style={styles.sectionTitle}>الوصف</Text>
+        <Text style={styles.description}>{apartment.description || 'لا يوجد وصف.'}</Text>
+      </View>
+
+      <View style={styles.contactBox}>
+        <Text style={styles.sectionTitle}>للتواصل</Text>
+        <Text style={styles.contactNumber}>{apartment.contact_number || 'غير متوفر'}</Text>
+      </View>
+
+      <TouchableOpacity style={styles.bookButton}>
+        <Text style={styles.bookText}>احجز الآن</Text>
+      </TouchableOpacity>
+    </ScrollView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    padding: 20,
+    backgroundColor: '#fff',
+  },
+  image: {
+    width: 320,
+    height: 200,
+    borderRadius: 15,
+    marginRight: 10,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: '700',
+  },
+  address: {
+    fontSize: 16,
+    color: '#888',
+    marginBottom: 10,
+  },
+  detailsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  detail: {
+    fontSize: 16,
+  },
+  descriptionBox: {
+    marginTop: 15,
+  },
+  contactBox: {
+    marginTop: 20,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 6,
+  },
+  description: {
+    fontSize: 16,
+    lineHeight: 22,
+    color: '#333',
+  },
+  contactNumber: {
+    fontSize: 16,
+    color: '#1D9BF0',
+  },
+  bookButton: {
+    marginTop: 30,
+    backgroundColor: '#1D9BF0',
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  bookText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  centered: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+});

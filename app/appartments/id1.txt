@@ -8,7 +8,6 @@ import {
   Image,
   KeyboardAvoidingView,
   Platform,
-  RefreshControl,
   ScrollView,
   Share,
   StyleSheet,
@@ -46,7 +45,7 @@ export default function ApartmentDetails() {
   const [submittingReview, setSubmittingReview] = useState(false);
   const [averageRating, setAverageRating] = useState(0);
 
-  const [refreshing, setRefreshing] = useState(false); // تم الإضافة هنا
+
 
   // جلب بيانات الشقة
   useEffect(() => {
@@ -92,42 +91,10 @@ export default function ApartmentDetails() {
     checkFavorite();
   }, [id, user]);
 
-  const fetchReviews = async () => {
-    if (!id) return;
-    setReviewLoading(true);
-    const { data, error } = await supabase
-      .from('reviews')
-      .select('id, rating, comment, created_at')
-      .eq('apartment_id', id)
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      console.log('خطأ في جلب المراجعات:', error);
-    } else {
-      setReviews(data || []);
-
-      // حساب المتوسط
-      if (data && data.length > 0) {
-        const total = data.reduce((sum, review) => sum + review.rating, 0);
-        const avg = total / data.length;
-        setAverageRating(avg);
-      } else {
-        setAverageRating(0);
-      }
-    }
-    setReviewLoading(false);
-  };
-
   // جلب المراجعات عند تحميل الصفحة أو تغير id
   useEffect(() => {
     fetchReviews();
   }, [id]);
-
-  const onRefresh = async () => {
-    setRefreshing(true);
-    await fetchReviews();  // يعيد جلب المراجعات
-    setRefreshing(false);
-  };
 
   // تبديل حالة المفضلة
   const toggleFavorite = async () => {
@@ -154,37 +121,37 @@ export default function ApartmentDetails() {
       if (!error) setIsFavorite(true);
     }
   };
-
   const submitReview = async () => {
-    if (!user) {
-      alert('يرجى تسجيل الدخول لإضافة مراجعة');
-      return;
-    }
-    if (newRating === 0) {
-      alert('يرجى اختيار تقييم');
-      return;
-    }
-    setSubmittingReview(true);
+  if (!user) {
+    alert('يرجى تسجيل الدخول لإضافة مراجعة');
+    return;
+  }
+  if (newRating === 0) {
+    alert('يرجى اختيار تقييم');
+    return;
+  }
+  setSubmittingReview(true);
 
-    const { error } = await supabase.from('reviews').insert([{
-      apartment_id: id,
-      user_id: user.id,
-      rating: newRating,
-      comment: newComment,
-    }]);
+  const { error } = await supabase.from('reviews').insert([{
+    apartment_id: id,
+    user_id: user.id,
+    rating: newRating,
+    comment: newComment,
+  }]);
 
-    setSubmittingReview(false);
+  setSubmittingReview(false);
 
-    if (error) {
-      alert('حدث خطأ أثناء إرسال المراجعة.');
-      console.log(error);
-    } else {
-      alert('تم إضافة مراجعتك بنجاح!');
-      setNewRating(0);
-      setNewComment('');
-      fetchReviews(); // تحديث قائمة المراجعات
-    }
-  };
+  if (error) {
+    alert('حدث خطأ أثناء إرسال المراجعة.');
+    console.log(error);
+  } else {
+    alert('تم إضافة مراجعتك بنجاح!');
+    setNewRating(0);
+    setNewComment('');
+    fetchReviews(); // تحديث قائمة المراجعات
+  }
+};
+
 
   const onShare = async () => {
     try {
@@ -198,6 +165,33 @@ export default function ApartmentDetails() {
       alert('حدث خطأ أثناء المشاركة.');
     }
   };
+
+  const fetchReviews = async () => {
+  if (!id) return;
+  setReviewLoading(true);
+  const { data, error } = await supabase
+    .from('reviews')
+    .select('id, rating, comment, created_at')
+    .eq('apartment_id', id)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.log('خطأ في جلب المراجعات:', error);
+  } else {
+    setReviews(data || []);
+
+    // حساب المتوسط
+    if (data && data.length > 0) {
+      const total = data.reduce((sum, review) => sum + review.rating, 0);
+      const avg = total / data.length;
+      setAverageRating(avg);
+    } else {
+      setAverageRating(0);
+    }
+  }
+  setReviewLoading(false);
+};
+
 
   if (loading) {
     return (
@@ -264,205 +258,198 @@ export default function ApartmentDetails() {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
       >
-        <ScrollView
-          style={styles.content}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-          }
-        >
-          <Text style={styles.apartmentType}>شقة</Text>
-          <View style={styles.ratingRow}>
-            <Ionicons name="star" size={16} color="#fbbf24" />
-            <Text style={styles.ratingText}>
-              {averageRating.toFixed(1)} ({reviews.length} مراجع{reviews.length !== 1 ? 'ات' : 'ة'})
-            </Text>
-          </View>
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+        <Text style={styles.apartmentType}>شقة</Text>
+        <View style={styles.ratingRow}>
+          <Ionicons name="star" size={16} color="#fbbf24" />
+          <Text style={styles.ratingText}>
+  {averageRating.toFixed(1)} ({reviews.length} مراجع{reviews.length !== 1 ? 'ات' : 'ة'})
+</Text>
+        </View>
 
-          <Text style={styles.title}>{apartment.title}</Text>
-          <Text style={styles.city}>{apartment.city}</Text>
+        <Text style={styles.title}>{apartment.title}</Text>
+        <Text style={styles.city}>{apartment.city}</Text>
 
-          {/* Tabs */}
-          <View style={styles.tabs}>
-            <TouchableOpacity onPress={() => setActiveTab('about')}>
-              <Text style={activeTab === 'about' ? styles.tabActive : styles.tabInactive}>حول</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => setActiveTab('gallery')}>
-              <Text style={activeTab === 'gallery' ? styles.tabActive : styles.tabInactive}>معرض الصور</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => setActiveTab('review')}>
-              <Text style={activeTab === 'review' ? styles.tabActive : styles.tabInactive}>المراجعات</Text>
-            </TouchableOpacity>
-          </View>
+        {/* Tabs */}
+        <View style={styles.tabs}>
+          <TouchableOpacity onPress={() => setActiveTab('about')}>
+            <Text style={activeTab === 'about' ? styles.tabActive : styles.tabInactive}>حول</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => setActiveTab('gallery')}>
+            <Text style={activeTab === 'gallery' ? styles.tabActive : styles.tabInactive}>معرض الصور</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => setActiveTab('review')}>
+            <Text style={activeTab === 'review' ? styles.tabActive : styles.tabInactive}>المراجعات</Text>
+          </TouchableOpacity>
+        </View>
 
-          {/* Tab Content */}
-          {activeTab === 'about' && (
-            <>
-              {/* Details */}
-              <View style={styles.detailsRow}>
-                <View style={styles.detailItem}>
-                  <Ionicons name="bed-outline" size={24} color="#000" />
-                  <Text style={styles.detailText}>{apartment.beds || 3} أسِرّة</Text>
-                </View>
-                <View style={styles.detailItem}>
-                  <MaterialIcons name="bathtub" size={24} color="#000" />
-                  <Text style={styles.detailText}>{apartment.baths || 1} حمام</Text>
-                </View>
-                <View style={styles.detailItem}>
-                  <FontAwesome name="expand" size={20} color="#000" />
-                  <Text style={styles.detailText}>{apartment.area || 0} متر²</Text>
-                </View>
+        {/* Tab Content */}
+        {activeTab === 'about' && (
+          <>
+            {/* Details */}
+            <View style={styles.detailsRow}>
+              <View style={styles.detailItem}>
+                <Ionicons name="bed-outline" size={24} color="#000" />
+                <Text style={styles.detailText}>{apartment.beds || 3} أسِرّة</Text>
               </View>
-
-              {/* Description */}
-              <View style={styles.section}>
-                <Text style={styles.sectionTitle}>الوصف</Text>
-                <Text style={styles.description}>{apartment.description || 'لا يوجد وصف'}</Text>
+              <View style={styles.detailItem}>
+                <MaterialIcons name="bathtub" size={24} color="#000" />
+                <Text style={styles.detailText}>{apartment.baths || 1} حمام</Text>
               </View>
-
-              {/* Contact Info */}
-              <View style={styles.contactRow}>
-                <Image
-                  source={{ uri: apartment.agent_image || 'https://randomuser.me/api/portraits/men/32.jpg' }}
-                  style={styles.agentImage}
-                />
-                <View>
-                  <Text style={styles.agentName}>{apartment.agent_name || 'John Doe'}</Text>
-                  <Text style={styles.agentContact}>
-                    للتواصل: {apartment.contact_number || 'غير متوفر'}
-                  </Text>
-                </View>
-              </View>
-            </>
-          )}
-
-          {activeTab === 'gallery' && (
-            <>
-              <View style={styles.galleryContainer}>
-                {images.map((uri, index) => (
-                  <TouchableOpacity
-                    key={index}
-                    onPress={() => {
-                      setCurrentImageIndex(index);
-                      setIsImageViewVisible(true);
-                    }}
-                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                  >
-                    <Image source={{ uri }} style={styles.galleryImage} resizeMode="cover" />
-                  </TouchableOpacity>
-                ))}
-              </View>
-
-              <ImageViewing
-                images={images.map((uri) => ({ uri }))}
-                imageIndex={currentImageIndex}
-                visible={isImageViewVisible}
-                onRequestClose={() => setIsImageViewVisible(false)}
-              />
-            </>
-          )}
-
-          {activeTab === 'review' && (
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>آراء المستأجرين</Text>
-              {reviewLoading ? (
-                <ActivityIndicator size="small" color="#1D9BF0" />
-              ) : reviews.length === 0 ? (
-                <Text style={styles.description}>لا توجد مراجعات بعد.</Text>
-              ) : (
-                reviews.map((review, index) => {
-                  // تأكد من وجود id، وإلا استخدم index كمفتاح
-                  const key = review.id ?? index;
-
-                  // احصل على تقييم صحيح (عدد صحيح بين 0 و 5)
-                  const rating = Math.min(5, Math.max(0, Math.round(review.rating || 0)));
-
-                  // تعليق المراجعة مع حماية من القيم الفارغة
-                  const comment = review.comment || 'لا يوجد تعليق';
-
-                  // تاريخ المراجعة بصيغة محلية أو فارغ إذا لم يتوفر
-                  const date = review.created_at
-                    ? new Date(review.created_at).toLocaleDateString()
-                    : '';
-
-                  return (
-                    <View key={key} style={styles.reviewItem}>
-                      <View style={styles.reviewHeader}>
-                        {[...Array(5)].map((_, i) => (
-                          <Ionicons
-                            key={i}
-                            name={i < rating ? 'star' : 'star-outline'}
-                            size={16}
-                            color="#fbbf24"
-                          />
-                        ))}
-                      </View>
-                      <Text style={styles.reviewComment}>{comment}</Text>
-                      <Text style={styles.reviewDate}>{date}</Text>
-                    </View>
-                  );
-                })
-              )}
-
-              {/* نموذج إضافة مراجعة */}
-              <View style={{ marginTop: 20 }}>
-                <Text style={{ fontWeight: 'bold', marginBottom: 8, textAlign: 'right' }}>أضف مراجعتك:</Text>
-
-                {/* اختيار التقييم */}
-                <View style={{ flexDirection: 'row-reverse', marginBottom: 12, justifyContent: 'flex-start' }}>
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <TouchableOpacity key={star} onPress={() => setNewRating(star)} style={{ marginLeft: 6 }}>
-                      <Ionicons
-                        name={star <= newRating ? 'star' : 'star-outline'}
-                        size={28}
-                        color="#fbbf24"
-                      />
-                    </TouchableOpacity>
-                  ))}
-                </View>
-
-                {/* مربع التعليق */}
-                <TextInput
-                  style={{
-                    borderWidth: 1,
-                    borderColor: '#ccc',
-                    borderRadius: 8,
-                    height: 80,
-                    padding: 8,
-                    textAlignVertical: 'top',
-                    textAlign: 'right',
-                    fontSize: 14,
-                    marginBottom: 12,
-                  }}
-                  multiline
-                  placeholder="اكتب تعليقك هنا..."
-                  value={newComment}
-                  onChangeText={setNewComment}
-                />
-
-                {/* زر الإرسال */}
-                <TouchableOpacity
-                  onPress={submitReview}
-                  disabled={submittingReview}
-                  style={{
-                    backgroundColor: submittingReview ? '#aaa' : '#1D9BF0',
-                    paddingVertical: 12,
-                    borderRadius: 10,
-                    alignItems: 'center',
-                  }}
-                >
-                  {submittingReview ? (
-                    <ActivityIndicator color="#fff" />
-                  ) : (
-                    <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>إرسال المراجعة</Text>
-                  )}
-                </TouchableOpacity>
+              <View style={styles.detailItem}>
+                <FontAwesome name="expand" size={20} color="#000" />
+                <Text style={styles.detailText}>{apartment.area || 0} متر²</Text>
               </View>
             </View>
-          )}
-        </ScrollView>
-      </KeyboardAvoidingView>
+
+            {/* Description */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>الوصف</Text>
+              <Text style={styles.description}>{apartment.description || 'لا يوجد وصف'}</Text>
+            </View>
+
+            {/* Contact Info */}
+            <View style={styles.contactRow}>
+              <Image
+                source={{ uri: apartment.agent_image || 'https://randomuser.me/api/portraits/men/32.jpg' }}
+                style={styles.agentImage}
+              />
+              <View>
+                <Text style={styles.agentName}>{apartment.agent_name || 'John Doe'}</Text>
+                <Text style={styles.agentContact}>
+                  للتواصل: {apartment.contact_number || 'غير متوفر'}
+                </Text>
+              </View>
+            </View>
+          </>
+        )}
+
+        {activeTab === 'gallery' && (
+          <>
+            <View style={styles.galleryContainer}>
+              {images.map((uri, index) => (
+                <TouchableOpacity
+                  key={index}
+                  onPress={() => {
+                    setCurrentImageIndex(index);
+                    setIsImageViewVisible(true);
+                  }}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                >
+                  <Image source={{ uri }} style={styles.galleryImage} resizeMode="cover" />
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <ImageViewing
+              images={images.map((uri) => ({ uri }))}
+              imageIndex={currentImageIndex}
+              visible={isImageViewVisible}
+              onRequestClose={() => setIsImageViewVisible(false)}
+            />
+          </>
+        )}
+
+        {activeTab === 'review' && (
+  <View style={styles.section}>
+    <Text style={styles.sectionTitle}>آراء المستأجرين</Text>
+    {reviewLoading ? (
+      <ActivityIndicator size="small" color="#1D9BF0" />
+    ) : reviews.length === 0 ? (
+      <Text style={styles.description}>لا توجد مراجعات بعد.</Text>
+    ) : (
+      reviews.map((review, index) => {
+        // تأكد من وجود id، وإلا استخدم index كمفتاح
+        const key = review.id ?? index;
+
+        // احصل على تقييم صحيح (عدد صحيح بين 0 و 5)
+        const rating = Math.min(5, Math.max(0, Math.round(review.rating || 0)));
+
+        // تعليق المراجعة مع حماية من القيم الفارغة
+        const comment = review.comment || 'لا يوجد تعليق';
+
+        // تاريخ المراجعة بصيغة محلية أو فارغ إذا لم يتوفر
+        const date = review.created_at
+          ? new Date(review.created_at).toLocaleDateString()
+          : '';
+
+        return (
+          <View key={key} style={styles.reviewItem}>
+            <View style={styles.reviewHeader}>
+              {[...Array(5)].map((_, i) => (
+                <Ionicons
+                  key={i}
+                  name={i < rating ? 'star' : 'star-outline'}
+                  size={16}
+                  color="#fbbf24"
+                />
+              ))}
+            </View>
+            <Text style={styles.reviewComment}>{comment}</Text>
+            <Text style={styles.reviewDate}>{date}</Text>
+          </View>
+        );
+      })
+    )}
+
+    {/* نموذج إضافة مراجعة */}
+    <View style={{ marginTop: 20 }}>
+      <Text style={{ fontWeight: 'bold', marginBottom: 8, textAlign: 'right' }}>أضف مراجعتك:</Text>
+
+      {/* اختيار التقييم */}
+      <View style={{ flexDirection: 'row-reverse', marginBottom: 12, justifyContent: 'flex-start' }}>
+        {[1, 2, 3, 4, 5].map((star) => (
+          <TouchableOpacity key={star} onPress={() => setNewRating(star)} style={{ marginLeft: 6 }}>
+            <Ionicons
+              name={star <= newRating ? 'star' : 'star-outline'}
+              size={28}
+              color="#fbbf24"
+            />
+          </TouchableOpacity>
+        ))}
+      </View>
+
+      {/* مربع التعليق */}
+      <TextInput
+        style={{
+          borderWidth: 1,
+          borderColor: '#ccc',
+          borderRadius: 8,
+          height: 80,
+          padding: 8,
+          textAlignVertical: 'top',
+          textAlign: 'right',
+          fontSize: 14,
+          marginBottom: 12,
+        }}
+        multiline
+        placeholder="اكتب تعليقك هنا..."
+        value={newComment}
+        onChangeText={setNewComment}
+      />
+
+      {/* زر الإرسال */}
+      <TouchableOpacity
+        onPress={submitReview}
+        disabled={submittingReview}
+        style={{
+          backgroundColor: submittingReview ? '#aaa' : '#1D9BF0',
+          paddingVertical: 12,
+          borderRadius: 10,
+          alignItems: 'center',
+        }}
+      >
+        {submittingReview ? (
+          <ActivityIndicator color="#fff" />
+        ) : (
+          <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>إرسال المراجعة</Text>
+        )}
+      </TouchableOpacity>
+    </View>
+  </View>
+)}
+      </ScrollView>
+    </KeyboardAvoidingView>
 
       {/* Book Now */}
       <View style={styles.bookNowRow}>
