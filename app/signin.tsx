@@ -23,7 +23,7 @@ export default function SignInScreen() {
 
       {/* Title */}
       <Text style={styles.title}>
-        مرحبا بك في سكني
+        جزاك الله كل خيرا يا اوس
       </Text>
 
       {/* Buttons */}
