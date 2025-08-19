@@ -126,7 +126,7 @@ export default function SignUpScreen() {
       </View>
 
       {/* أزرار التواصل الاجتماعي */}
-      <TouchableOpacity style={[styles.socialButton, { backgroundColor: socialButtonBackground, borderColor: socialButtonBorderColor }]} activeOpacity={0.8}>
+      <TouchableOpacity style={[styles.socialButton, { backgroundColor: socialButtonBackground, borderColor: socialButtonBorderColor }]} activeOpacity={0.8} onPress={() => router.replace('/accounttype')}>
         <FontAwesome name="google" size={20} color={socialButtonTextColor} style={styles.socialIcon} />
         <Text style={[styles.socialButtonText, { color: socialButtonTextColor }]}>الاستمرار بواسطة Google</Text>
       </TouchableOpacity>
