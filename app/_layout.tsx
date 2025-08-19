@@ -57,7 +57,9 @@ export default function RootLayout() {
         <Stack.Screen name="signupdetails1" options={{ headerShown: false }} />
         <Stack.Screen name="signupdetails2" options={{ headerShown: false }} />
         <Stack.Screen name="forgotpassword" options={{ headerShown: false }} />
+        <Stack.Screen name="accounttype" options={{ headerShown: false }} />
         <Stack.Screen name="account-disabled" options={{ headerShown: false }} />
+        <Stack.Screen name="signupdetails_owner" options={{ headerShown: false }} />
         <Stack.Screen name="contact-support" options={{ headerShown: false }} />
         <Stack.Screen name="index" options={{ headerShown: false }} />
         <Stack.Screen name="signin" options={{ headerShown: false }} />
@@ -79,8 +81,10 @@ export default function RootLayout() {
         <Stack.Screen name="signupdetails1" options={{ headerShown: false }} />
         <Stack.Screen name="signupdetails2" options={{ headerShown: false }} />
         <Stack.Screen name="forgotpassword" options={{ headerShown: false }} />
+        <Stack.Screen name="accounttype" options={{ headerShown: false }} />
         <Stack.Screen name="account-disabled" options={{ headerShown: false }} />
         <Stack.Screen name="contact-support" options={{ headerShown: false }} />
+        <Stack.Screen name="signupdetails_owner" options={{ headerShown: false }} />
         <Stack.Screen name="index" options={{ headerShown: false }} />
         <Stack.Screen name="signin" options={{ headerShown: false }} />
         <Stack.Screen name="appartments/[id]" options={{ headerShown: false }} />
@@ -97,10 +101,12 @@ export default function RootLayout() {
         <Stack.Screen name="signup" options={{ headerShown: false }} />
         <Stack.Screen name="signupdetails" options={{ headerShown: false }} />
         <Stack.Screen name="signupdetails1" options={{ headerShown: false }} />
+        <Stack.Screen name="accounttype" options={{ headerShown: false }} />
         <Stack.Screen name="signupdetails2" options={{ headerShown: false }} />
         <Stack.Screen name="forgotpassword" options={{ headerShown: false }} />
         <Stack.Screen name="account-disabled" options={{ headerShown: false }} />
         <Stack.Screen name="contact-support" options={{ headerShown: false }} />
+        <Stack.Screen name="signupdetails_owner" options={{ headerShown: false }} />
         <Stack.Screen name="index" options={{ headerShown: false }} />
         <Stack.Screen name="signin" options={{ headerShown: false }} />
         <Stack.Screen name="appartments/[id]" options={{ headerShown: false }} />

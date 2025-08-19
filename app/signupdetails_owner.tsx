@@ -1,18 +1,40 @@
+import { AntDesign } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
-import { StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import {
+  KeyboardAvoidingView,
+  Platform,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  useColorScheme,
+  View,
+} from "react-native";
 
-const SignupDetailsOwner = () => {
+export default function SignupDetailsOwner() {
   const router = useRouter();
+  const colorScheme = useColorScheme();
+  const isDarkMode = colorScheme === "dark";
 
-  const [fullName, setFullName] = useState("");
+  const [appartmentaddress, setAppartmentAdress] = useState("");
   const [phone, setPhone] = useState("");
   const [idImage, setIdImage] = useState<string | null>(null);
   const [ownershipImage, setOwnershipImage] = useState<string | null>(null);
 
+  // ألوان حسب الوضع ليلي/نهاري
+  const backgroundColor = isDarkMode ? "#121212" : "#fff";
+  const textColor = isDarkMode ? "#fff" : "#000";
+  const inputBackground = isDarkMode ? "#333" : "#fff";
+  const inputBorderColor = isDarkMode ? "#555" : "#ccc";
+  const buttonBackground = isDarkMode ? "#1a73e8" : "#000";
+  const buttonTextColor = "#fff";
+
   // دالة اختيار صورة
-  const pickImage = async (setImage: React.Dispatch<React.SetStateAction<string | null>>) => {
+  const pickImage = async (
+    setImage: React.Dispatch<React.SetStateAction<string | null>>
+  ) => {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
@@ -21,63 +43,136 @@ const SignupDetailsOwner = () => {
     if (!result.canceled) setImage(result.assets[0].uri);
   };
 
-  const handleNext = () => {
-    if (!fullName || !phone || !idImage || !ownershipImage) {
+  const handleContinue = () => {
+    if (!appartmentaddress || !phone || !idImage || !ownershipImage) {
       alert("رجاءً أكمل كل الحقول");
       return;
     }
 
-    // هنا ممكن تضيف منطق حفظ البيانات مؤقتًا أو رفعها للـ backend
-
-    router.push("/signupdetails2"); // الانتقال لشاشة إنشاء كلمة المرور
+    router.push("/signupdetails2"); // شاشة كلمة المرور
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>تفاصيل إضافية للمالك</Text>
+    <KeyboardAvoidingView
+      style={[styles.container, { backgroundColor }]}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 60 : 0}
+    >
+      <View style={styles.scrollContainer}>
+        {/* زر الرجوع */}
+        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+          <AntDesign name="arrowleft" size={24} color="#4a90e2" />
+        </TouchableOpacity>
 
-      <TextInput
-        style={styles.input}
-        placeholder="الاسم الكامل"
-        value={fullName}
-        onChangeText={setFullName}
-      />
-
-      <TextInput
-        style={styles.input}
-        placeholder="رقم الهاتف"
-        value={phone}
-        onChangeText={setPhone}
-        keyboardType="phone-pad"
-      />
-
-      <TouchableOpacity style={styles.imageButton} onPress={() => pickImage(setIdImage)}>
-        <Text style={styles.buttonText}>
-          {idImage ? "تم اختيار صورة الهوية" : "رفع صورة الهوية"}
+        <Text style={[styles.title, { color: textColor }]}>
+          تفاصيل إضافية للمالك
         </Text>
-      </TouchableOpacity>
 
-      <TouchableOpacity style={styles.imageButton} onPress={() => pickImage(setOwnershipImage)}>
-        <Text style={styles.buttonText}>
-          {ownershipImage ? "تم اختيار إثبات الملكية" : "رفع إثبات الملكية"}
-        </Text>
-      </TouchableOpacity>
+        {/* عنوان السكن"المراد تأجيره"*/}
+        <TextInput
+          style={[
+            styles.input,
+            { backgroundColor: inputBackground, borderColor: inputBorderColor, color: textColor },
+          ]}
+          placeholder="عنوان السكن المراد تأجيره"
+          placeholderTextColor={isDarkMode ? "#bbb" : "#888"}
+          value={appartmentaddress}
+          onChangeText={setAppartmentAdress}
+          returnKeyType="done"
+          textAlign="right"
+        />
 
-      <TouchableOpacity style={styles.nextButton} onPress={handleNext}>
-        <Text style={styles.nextButtonText}>التالي</Text>
-      </TouchableOpacity>
-    </View>
+        {/* رقم الهاتف */}
+        <TextInput
+          style={[
+            styles.input,
+            { backgroundColor: inputBackground, borderColor: inputBorderColor, color: textColor },
+          ]}
+          placeholder="رقم الهاتف"
+          placeholderTextColor={isDarkMode ? "#bbb" : "#888"}
+          value={phone}
+          onChangeText={setPhone}
+          keyboardType="phone-pad"
+          returnKeyType="done"
+          textAlign="right"
+        />
+
+        {/* رفع صورة الهوية */}
+        <TouchableOpacity
+          style={[styles.uploadButton, { backgroundColor: inputBackground, borderColor: inputBorderColor }]}
+          onPress={() => pickImage(setIdImage)}
+        >
+          <Text style={{ color: textColor, fontSize: 16, textAlign: "center" }}>
+            {idImage ? "✅ تم اختيار صورة الهوية" : "📎 رفع صورة الهوية"}
+          </Text>
+        </TouchableOpacity>
+
+        {/* رفع إثبات الملكية */}
+        <TouchableOpacity
+          style={[styles.uploadButton, { backgroundColor: inputBackground, borderColor: inputBorderColor }]}
+          onPress={() => pickImage(setOwnershipImage)}
+        >
+          <Text style={{ color: textColor, fontSize: 16, textAlign: "center" }}>
+            {ownershipImage ? "✅ تم اختيار إثبات الملكية" : "📎 رفع إثبات الملكية"}
+          </Text>
+        </TouchableOpacity>
+
+        {/* زر استمرار */}
+        <TouchableOpacity
+          style={[styles.continueButton, { backgroundColor: buttonBackground }]}
+          onPress={handleContinue}
+          activeOpacity={0.8}
+        >
+          <Text style={[styles.continueButtonText, { color: buttonTextColor }]}>
+            استمرار
+          </Text>
+        </TouchableOpacity>
+      </View>
+    </KeyboardAvoidingView>
   );
-};
-
-export default SignupDetailsOwner;
+}
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, justifyContent: "center" },
-  title: { fontSize: 22, marginBottom: 20, textAlign: "center" },
-  input: { borderWidth: 1, borderColor: "#ccc", borderRadius: 10, padding: 12, marginBottom: 15 },
-  imageButton: { backgroundColor: "#ddd", padding: 12, borderRadius: 10, marginBottom: 15 },
-  buttonText: { textAlign: "center", fontSize: 16 },
-  nextButton: { backgroundColor: "#2196F3", padding: 15, borderRadius: 10, marginTop: 20 },
-  nextButtonText: { color: "#fff", textAlign: "center", fontSize: 18 },
+  container: {
+    flex: 1,
+    paddingTop: Platform.OS === "ios" ? 80 : 50,
+    paddingHorizontal: 20,
+  },
+  scrollContainer: {
+    justifyContent: "center",
+    flexGrow: 1,
+  },
+  backButton: {
+    marginBottom: 10,
+    alignSelf: "flex-start",
+  },
+  title: {
+    fontSize: 22,
+    fontWeight: "bold",
+    marginBottom: 20,
+    textAlign: "center",
+  },
+  input: {
+    borderWidth: 1.5,
+    borderRadius: 12,
+    padding: 15,
+    marginBottom: 15,
+    fontSize: 16,
+  },
+  uploadButton: {
+    borderWidth: 1.5,
+    borderRadius: 12,
+    padding: 15,
+    marginBottom: 15,
+  },
+  continueButton: {
+    borderRadius: 25,
+    paddingVertical: 14,
+    alignItems: "center",
+    marginTop: 20,
+  },
+  continueButtonText: {
+    fontSize: 18,
+    fontWeight: "600",
+  },
 });
