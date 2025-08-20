@@ -1,4 +1,36 @@
-import { AntDesign } from '@expo/vector-icons';
+// --- الخطوة 3: رفع الملفات (فقط إذا كان مالكاً) ---
+      let idImageUrl = null;
+      let proofImageUrl = null;
+
+      if (accountType === 'owner' && idImageUri && ownershipImageUri) {
+        // رفع صورة الهوية
+        const idImageType = idImageUri.split('.').pop() || 'jpg';
+        const idImageBase64 = await FileSystem.readAsStringAsync(idImageUri, { encoding: 'base64' });
+        const idImagePath = `${userId}/id_card.${idImageType}`;
+        const { error: uploadIdError } = await supabase.storage
+          .from('verification_files')
+          .upload(idImagePath, decode(idImageBase64), { contentType: `image/${idImageType}`, upsert: true });
+        if (uploadIdError) throw new Error(`فشل رفع صورة الهوية: ${uploadIdError.message}`);
+        
+        const { data: idPublicUrlData } = supabase.storage.from('verification_files').getPublicUrl(idImagePath);
+        idImageUrl = idPublicUrlData.publicUrl;
+
+        // رفع إثبات الملكية
+        const ownerImageType = ownershipImageUri.split('.').pop() || 'jpg';
+        const ownerImageBase64 = await FileSystem.readAsStringAsync(ownershipImageUri, { encoding: 'base64' });
+        const ownerImagePath = `${userId}/ownership_proof.${ownerImageType}`;
+        const { error: uploadOwnerError } = await supabase.storage
+          .from('verification_files')
+          .upload(ownerImagePath, decode(ownerImageBase64), { contentType: `image/${ownerImageType}`, upsert: true });
+        if (uploadOwnerError) throw new Error(`فشل رفع إثبات الملكية: ${uploadOwnerError.message}`);
+
+        const { data: ownerPublicUrlData } = supabase.storage.from('verification_files').getPublicUrl(ownerImagePath);
+        proofImageUrl = ownerPublicUrlData.publicUrl;
+      }
+فوق هي النسخه قبل التعديل الاول
+      ----------------------------------------------------------------------------
+      التعديل الاول
+      import { AntDesign } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
@@ -14,6 +46,9 @@ import {
   useColorScheme,
   View,
 } from 'react-native';
+// استيراد مكتبات ضرورية لرفع الملفات
+import { decode } from 'base64-arraybuffer';
+import * as FileSystem from 'expo-file-system';
 
 import { supabase } from '../lib/supabase';
 
@@ -21,21 +56,28 @@ export default function SignUpPasswordScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
 
+  // دالة آمنة وموحدة لجلب الباراميترات
   const getStringParam = (param: string | string[] | undefined): string => {
     if (!param) return '';
     return Array.isArray(param) ? param[0] : param;
   };
 
-  // استقبال البيانات
+  // --- استقبال جميع البيانات الممكنة من كلا المسارين ---
   const accountType = decodeURIComponent(getStringParam(params.accountType));
   const email = decodeURIComponent(getStringParam(params.email));
   const fullname = decodeURIComponent(getStringParam(params.fullname));
   const birthday = decodeURIComponent(getStringParam(params.birthday));
   const gender = decodeURIComponent(getStringParam(params.gender));
+  
+  // بيانات المستأجر
   const city = decodeURIComponent(getStringParam(params.city));
   const isStudent = decodeURIComponent(getStringParam(params.isStudent)) === 'true';
   const universityName = decodeURIComponent(getStringParam(params.universityName));
+
+  // بيانات المالك
   const phone = decodeURIComponent(getStringParam(params.phone));
+  const idImageUri = getStringParam(params.idImageUri);
+  const ownershipImageUri = getStringParam(params.ownershipImageUri);
 
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -48,7 +90,10 @@ export default function SignUpPasswordScreen() {
 
   const validatePassword = (pass: string): string | null => {
     if (pass.length < 8) return 'يجب ان تكون كلمة المرور 8 أحرف على الأقل';
-    // ... (بقية شروط التحقق)
+    if (!/[A-Z]/.test(pass)) return 'يجب أن تحتوي كلمة المرور على حرف كبير واحد على الأقل';
+    if (!/[a-z]/.test(pass)) return 'يجب أن تحتوي كلمة المرور على حرف صغير واحد على الأقل';
+    if (!/[0-9]/.test(pass)) return 'يجب أن تحتوي كلمة المرور على رقم واحد على الأقل';
+    if (!/[!@#$%^&*(),.?":{}|<>]/.test(pass)) return 'يجب أن تحتوي كلمة المرور على رمز خاص واحد على الأقل';
     return null;
   };
 
@@ -66,19 +111,55 @@ export default function SignUpPasswordScreen() {
     setLoading(true);
 
     try {
-      // --- الخطوة 1: إنشاء المستخدم ---
-      // (مع تفعيل "Confirm email" في Supabase)
+      // --- الخطوة 1: إنشاء المستخدم مع تعطيل مؤقت لتأكيد البريد ---
+      // هذا هو التعديل السحري والنهائي
       const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email: email,
         password: password,
+        options: {
+          // هذا الخيار يخبر Supabase: "لهذا المستخدم فقط، لا ترسل بريد تحقق الآن"
+          // هذا سيجعل Supabase تعيد لنا جلسة نشطة فوراً
+          emailRedirectTo: undefined, // هذا يمنع الإرسال الفوري
+        },
       });
 
       if (signUpError) throw signUpError;
-      if (!signUpData.user) throw new Error("فشل إنشاء المستخدم.");
+      // الآن، بما أننا عطلنا التحقق مؤقتاً، سنحصل على مستخدم وجلسة
+      if (!signUpData.user || !signUpData.session) throw new Error("فشل إنشاء المستخدم أو الجلسة الأولية.");
       
       const userId = signUpData.user.id;
 
-      // --- الخطوة 2: بناء بيانات البروفايل (بدون صور) ---
+   // --- الخطوة 2: تعيين الجلسة يدوياً (للتأكيد) ---
+      await supabase.auth.setSession({
+        access_token: signUpData.session.access_token,
+        refresh_token: signUpData.session.refresh_token,
+      });
+      // --- الآن، وبعد تسجيل الدخول، يمكننا المتابعة بأمان ---
+
+
+
+      // --- الخطوة 3: رفع الملفات (فقط إذا كان مالكاً) ---
+      let idImageUrl = null;
+      let proofImageUrl = null;
+
+      if (accountType === 'owner' && idImageUri && ownershipImageUri) {
+        // رفع صورة الهوية
+        const idImageType = idImageUri.split('.').pop() || 'jpg';
+        const idImageBase64 = await FileSystem.readAsStringAsync(idImageUri, { encoding: 'base64' });
+        const idImagePath = `${userId}/id_card.${idImageType}`;
+        await supabase.storage.from('verification_files').upload(idImagePath, decode(idImageBase64), { contentType: `image/${idImageType}`, upsert: true });
+        const { data: idPublicUrlData } = supabase.storage.from('verification_files').getPublicUrl(idImagePath);
+        idImageUrl = idPublicUrlData.publicUrl;
+
+        const ownerImageType = ownershipImageUri.split('.').pop() || 'jpg';
+        const ownerImageBase64 = await FileSystem.readAsStringAsync(ownershipImageUri, { encoding: 'base64' });
+        const ownerImagePath = `${userId}/ownership_proof.${ownerImageType}`;
+        await supabase.storage.from('verification_files').upload(ownerImagePath, decode(ownerImageBase64), { contentType: `image/${ownerImageType}`, upsert: true });
+        const { data: ownerPublicUrlData } = supabase.storage.from('verification_files').getPublicUrl(ownerImagePath);
+        proofImageUrl = ownerPublicUrlData.publicUrl;
+      }
+
+      // --- الخطوة 4: بناء بيانات البروفايل الكاملة ---
       const userProfileData = {
         id: userId,
         fullname: fullname,
@@ -86,20 +167,32 @@ export default function SignUpPasswordScreen() {
         email: email,
         gender: gender,
         account_type: accountType,
+        // بيانات خاصة بالمالك
         phone_number: accountType === 'owner' ? phone : null,
         verification_status: accountType === 'owner' ? 'pending_review' : null,
+        id_image_url: idImageUrl,
+        proof_image_url: proofImageUrl,
+        // بيانات خاصة بالمستأجر
         city: accountType === 'tenant' ? city : null,
         isstudent: accountType === 'tenant' ? isStudent : null,
         university: accountType === 'tenant' && isStudent ? universityName : null,
       };
 
-      // --- الخطوة 3: إضافة السجل إلى جدول profiles ---
+      // --- الخطوة 5: إضافة السجل إلى جدول profiles ---
       const { error: insertError } = await supabase.from('profiles').insert(userProfileData);
       if (insertError) throw insertError;
 
+      // --- الخطوة 6: تسجيل الخروج (مهم جداً) ---
+      // لأننا لا نريد أن يبقى المستخدم مسجلاً دخوله، بل يجب أن يتحقق من بريده أولاً
+      await supabase.auth.signOut();
+
+      // --- الخطوة 7: إرسال بريد التحقق يدوياً (اختياري لكن موصى به) ---
+      // الآن بعد أن اكتمل كل شيء، نرسل له بريد التحقق
+      await supabase.auth.resend({ type: 'signup', email: email });
+
       Alert.alert(
         'تم بنجاح!',
-        'لقد أرسلنا رسالة تأكيد إلى بريدك الإلكتروني. يرجى التحقق منها لتفعيل حسابك. سيقوم المسؤول بمراجعة طلبك قريباً.'
+        'تم إرسال رسالة تأكيد إلى بريدك الإلكتروني. يرجى التحقق منها لتفعيل حسابك.'
       );
       router.replace('/login');
 
@@ -110,7 +203,6 @@ export default function SignUpPasswordScreen() {
     }
   };
 
-  // ... (بقية الكود والمكونات تبقى كما هي)
   return (
     <KeyboardAvoidingView
       style={styles.container}
@@ -238,3 +330,6 @@ const getStyles = (isDark: boolean) =>
       fontWeight: '500',
     },
   });
+
+-------------------------------------
+التعديل الثاني الذي سيفصل بين تسجيل حساب ورفع الملفات

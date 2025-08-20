@@ -1,6 +1,7 @@
+//signupdetails_owner.tsx
 import { AntDesign } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
   KeyboardAvoidingView,
@@ -15,6 +16,7 @@ import {
 
 export default function SignupDetailsOwner() {
   const router = useRouter();
+  const params = useLocalSearchParams(); // استقبال البيانات من الشاشة السابقة
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === "dark";
 
@@ -49,7 +51,17 @@ export default function SignupDetailsOwner() {
       return;
     }
 
-    router.push("/signupdetails2"); // شاشة كلمة المرور
+    router.push({
+    pathname: "/signupdetails2",
+    params: {
+      ...params, // تمرير البيانات السابقة (email, fullname, etc.)
+      accountType: 'owner',
+      appartmentaddress: appartmentaddress,
+      phone: phone,
+      idImageUri: idImage, // مسار صورة الهوية
+      ownershipImageUri: ownershipImage, // مسار إثبات الملكية
+    },
+  }); // شاشة كلمة المرور
   };
 
   return (
