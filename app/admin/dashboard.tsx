@@ -1,9 +1,9 @@
-// app/screens/admin/dashboard.tsx
+// app/admin/dashboard.tsx
 import { useRouter } from 'expo-router';
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { supabase } from '../../../lib/supabase'; // تأكد من المسار الصحيح لتهيئة Supabase
+import { supabase } from '../../lib/supabase'; // تأكد من المسار الصحيح لتهيئة Supabase
 
 export default function AdminDashboardScreen() {
   const router = useRouter();

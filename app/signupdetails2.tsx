@@ -19,43 +19,71 @@ import { supabase } from '../lib/supabase';
 
 export default function SignUpPasswordScreen() {
   const router = useRouter();
-  const params = useLocalSearchParams();
+  const {
+    email,
+    fullname,
+    birthday,
+    gender,
+    city,
+    isStudent,
+    universityName = 'No uni',
+  } = useLocalSearchParams();
 
   const getStringParam = (param: string | string[] | undefined): string => {
     if (!param) return '';
-    return Array.isArray(param) ? param[0] : param;
+    if (Array.isArray(param)) return param[0];
+    return param;
   };
 
-  // استقبال البيانات
-  const accountType = decodeURIComponent(getStringParam(params.accountType));
-  const email = decodeURIComponent(getStringParam(params.email));
-  const fullname = decodeURIComponent(getStringParam(params.fullname));
-  const birthday = decodeURIComponent(getStringParam(params.birthday));
-  const gender = decodeURIComponent(getStringParam(params.gender));
-  const city = decodeURIComponent(getStringParam(params.city));
-  const isStudent = decodeURIComponent(getStringParam(params.isStudent)) === 'true';
-  const universityName = decodeURIComponent(getStringParam(params.universityName));
-  const phone = decodeURIComponent(getStringParam(params.phone));
+  const emailDecoded = decodeURIComponent(getStringParam(email));
+  const fullnameDecoded = decodeURIComponent(getStringParam(fullname));
+  const birthdayDecodedRaw = decodeURIComponent(getStringParam(birthday));
+  const cityDecoded = decodeURIComponent(getStringParam(city));
+  const genderDecoded = decodeURIComponent(getStringParam(gender));
+  const isStudentDecoded = decodeURIComponent(getStringParam(isStudent)) === 'true';
+  const universityNameDecoded = decodeURIComponent(getStringParam(universityName));
+  const birthdayDecoded = birthdayDecodedRaw;
+
 
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
+
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const isDark = useColorScheme() === 'dark';
   const styles = getStyles(isDark);
 
-  const validatePassword = (pass: string): string | null => {
-    if (pass.length < 8) return 'يجب ان تكون كلمة المرور 8 أحرف على الأقل';
-    // ... (بقية شروط التحقق)
+  const validatePassword = (password: string): string | null => {
+    if (password.length < 8) return 'يجب ان تكون كلمة المرور 8 أحرف على الأقل';
+    if (!/[A-Z]/.test(password)) return 'يجب أن تحتوي كلمة المرور على حرف كبير واحد على الأقل';
+    if (!/[a-z]/.test(password)) return 'يجب أن تحتوي كلمة المرور على حرف صغير واحد على الأقل';
+    if (!/[0-9]/.test(password)) return 'يجب أن تحتوي كلمة المرور على رقم واحد على الأقل';
+    if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) return 'يجب أن تحتوي كلمة المرور على رمز خاص واحد على الأقل';
     return null;
   };
 
+  console.log('emailDecoded:', emailDecoded);
+  console.log('fullnameDecoded:', fullnameDecoded);
+  console.log('birthdayDecoded:', birthdayDecoded);
+  console.log('genderDecoded:', genderDecoded);
+  console.log('cityDecoded:', cityDecoded);
+  console.log('isStudentDecoded:', isStudentDecoded);
+  console.log('universityNameDecoded:', universityNameDecoded);
+
   const handleSignUp = async () => {
-    const passwordError = validatePassword(password);
-    if (passwordError) {
-      Alert.alert('كلمة المرور غير صالحة', passwordError);
+    if (!emailDecoded || !fullnameDecoded || !birthdayDecoded || !cityDecoded) {
+      Alert.alert('خطأ', 'بيانات التسجيل غير كاملة، يرجى العودة وتعبئة جميع الخطوات.');
+      return;
+    }
+    if (!password || !confirmPassword) {
+      Alert.alert('خطأ', 'يرجى تعبئة كل الحقول');
+      return;
+    }
+    const errorMessage = validatePassword(password);
+    if (errorMessage) {
+      Alert.alert('كلمة المرور غير صالحة', errorMessage);
       return;
     }
     if (password !== confirmPassword) {
@@ -66,51 +94,54 @@ export default function SignUpPasswordScreen() {
     setLoading(true);
 
     try {
-      // --- الخطوة 1: إنشاء المستخدم ---
-      // (مع تفعيل "Confirm email" في Supabase)
-      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-        email: email,
+      // 1. تسجيل المستخدم في Supabase Auth
+      const { data, error } = await supabase.auth.signUp({
+        email: emailDecoded,
         password: password,
       });
 
-      if (signUpError) throw signUpError;
-      if (!signUpData.user) throw new Error("فشل إنشاء المستخدم.");
-      
-      const userId = signUpData.user.id;
+      if (error) {
+        Alert.alert('خطأ', error.message);
+        setLoading(false);
+        return;
+      }
+      if (!data || !data.user) {
+        Alert.alert('خطأ', 'تعذر إنشاء حساب المستخدم.');
+        setLoading(false);
+        return;
+      }
 
-      // --- الخطوة 2: بناء بيانات البروفايل (بدون صور) ---
-      const userProfileData = {
-        id: userId,
-        fullname: fullname,
-        birthday: birthday,
-        email: email,
-        gender: gender,
-        account_type: accountType,
-        phone_number: accountType === 'owner' ? phone : null,
-        verification_status: accountType === 'owner' ? 'pending_review' : null,
-        city: accountType === 'tenant' ? city : null,
-        isstudent: accountType === 'tenant' ? isStudent : null,
-        university: accountType === 'tenant' && isStudent ? universityName : null,
-      };
+      // 2. إضافة بيانات المستخدم الإضافية في جدول profiles
+      const { error: insertError } = await supabase.from('profiles').insert({
+        id: data.user.id, // uid المستخدم في سوبابيز
+        fullname: fullnameDecoded,
+        birthday: birthdayDecoded,
+        email: emailDecoded,
+        city: cityDecoded,
+        gender: genderDecoded,
+        isstudent: isStudentDecoded,
+        university: universityNameDecoded,
+      });
 
-      // --- الخطوة 3: إضافة السجل إلى جدول profiles ---
-      const { error: insertError } = await supabase.from('profiles').insert(userProfileData);
-      if (insertError) throw insertError;
+      if (insertError) {
+        Alert.alert('خطأ', insertError.message);
+        setLoading(false);
+        return;
+      }
 
       Alert.alert(
-        'تم بنجاح!',
-        'لقد أرسلنا رسالة تأكيد إلى بريدك الإلكتروني. يرجى التحقق منها لتفعيل حسابك. سيقوم المسؤول بمراجعة طلبك قريباً.'
+        'تحقق من بريدك الإلكتروني',
+        'تم إرسال رسالة تأكيد إلى بريدك الإلكتروني، يرجى التحقق منها قبل تسجيل الدخول.'
       );
-      router.replace('/login');
 
+      router.replace('/login');
     } catch (error: any) {
-      Alert.alert('حدث خطأ', error.message);
+      Alert.alert('خطأ', error.message || 'حدث خطأ أثناء إنشاء الحساب');
     } finally {
       setLoading(false);
     }
   };
 
-  // ... (بقية الكود والمكونات تبقى كما هي)
   return (
     <KeyboardAvoidingView
       style={styles.container}
@@ -121,16 +152,18 @@ export default function SignUpPasswordScreen() {
           <AntDesign name="arrowleft" size={24} color={isDark ? '#fff' : '#4a90e2'} />
         </TouchableOpacity>
 
-        <Text style={styles.title}>الخطوة الأخيرة: كلمة المرور</Text>
+        <Text style={styles.title}>كلمة المرور</Text>
 
         <View style={styles.passwordInputContainer}>
           <TextInput
-            style={styles.input}
+            style={[styles.input, { flex: 1 }]}
             placeholder="كلمة المرور"
             placeholderTextColor={isDark ? '#aaa' : '#666'}
             secureTextEntry={!showPassword}
             value={password}
             onChangeText={setPassword}
+            textContentType="newPassword"
+            autoComplete="password-new"
           />
           <TouchableOpacity
             onPress={() => setShowPassword(!showPassword)}
@@ -144,12 +177,14 @@ export default function SignUpPasswordScreen() {
 
         <View style={styles.passwordInputContainer}>
           <TextInput
-            style={styles.input}
+            style={[styles.input, { flex: 1 }]}
             placeholder="تأكيد كلمة المرور"
             placeholderTextColor={isDark ? '#aaa' : '#666'}
             secureTextEntry={!showConfirmPassword}
             value={confirmPassword}
             onChangeText={setConfirmPassword}
+            textContentType="password"
+            autoComplete="password"
           />
           <TouchableOpacity
             onPress={() => setShowConfirmPassword(!showConfirmPassword)}
@@ -207,18 +242,16 @@ const getStyles = (isDark: boolean) =>
       alignItems: 'center',
       width: '100%',
       marginBottom: 20,
+    },
+    input: {
       borderWidth: 1.5,
       borderColor: isDark ? '#444' : '#4a90e2',
       borderRadius: 25,
       height: 50,
       paddingHorizontal: 20,
-      backgroundColor: isDark ? '#222' : '#fff',
-    },
-    input: {
-      flex: 1,
       fontSize: 16,
       color: isDark ? '#fff' : '#000',
-      textAlign: 'right',
+      backgroundColor: isDark ? '#222' : '#fff',
     },
     showPasswordButton: {
       paddingHorizontal: 12,

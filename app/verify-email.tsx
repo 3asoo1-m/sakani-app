@@ -1,7 +1,7 @@
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { ActivityIndicator, Alert, Button, Text, View } from 'react-native';
-import { supabase } from '../../lib/supabase';
+import { supabase } from '../lib/supabase';
 
 export default function VerifyEmailScreen() {
   const router = useRouter();

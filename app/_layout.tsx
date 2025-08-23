@@ -1,125 +1,74 @@
 // app/_layout.tsx
+import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { ActivityIndicator, StyleSheet, View } from 'react-native'; // استيراد ActivityIndicator و View و StyleSheet
-import { supabase } from '../lib/supabase'; // تأكد من المسار الصحيح لتهيئة Supabase
+import * as SplashScreen from 'expo-splash-screen';
+import { useEffect } from 'react';
+import { supabase } from '../lib/supabase'; // تأكد من المسار الصحيح
+
+// منع إخفاء شاشة البداية تلقائياً
+SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
-  const [userEmail, setUserEmail] = useState<string | null>(null);
-  const [isLoadingAuth, setIsLoadingAuth] = useState(true);
+  const [loaded] = useFonts({
+    SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
+  });
 
   useEffect(() => {
-    const checkAuth = async () => {
-      const { data: { user }, error } = await supabase.auth.getUser();
+    if (loaded) {
+      SplashScreen.hideAsync();
+    }
+  }, [loaded]);
 
-      if (error) {
-        console.error('Error getting user session:', error.message);
-        setUserEmail(null);
-      } else if (user) {
-        setUserEmail(user.email || null);
-      } else {
-        setUserEmail(null);
+  useEffect(() => {
+    // الاستماع لتغيرات حالة المصادقة
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      // إذا لم يكن هناك جلسة، أعد التوجيه إلى شاشة تسجيل الدخول
+      if (!session) {
+        // router.replace('/signin'); // لا تستخدم router هنا مباشرة في RootLayout
+        // يمكن التعامل مع هذا في _layout.tsx الخاص بـ (tabs) أو استخدام Redirect
       }
-      setIsLoadingAuth(false);
-    };
-
-    checkAuth();
-
-    const { data: authListener } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        setUserEmail(session?.user?.email || null);
-        setIsLoadingAuth(false);
-      }
-    );
+    });
 
     return () => {
-      authListener.subscription.unsubscribe();
+      subscription.unsubscribe();
     };
   }, []);
 
-  if (isLoadingAuth) {
-    // عرض شاشة تحميل بسيطة بدلاً من الشاشة السوداء
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#0000ff" />
-      </View>
-    );
+  if (!loaded) {
+    return null;
   }
 
-  // إذا لم يكن هناك مستخدم مسجل دخول، أعد التوجيه إلى شاشة تسجيل الدخول
-  if (!userEmail) {
-    return (
-      <Stack>
-        <Stack.Screen name="login" options={{ headerShown: false }} />
-        {/* أضف هنا جميع الشاشات التي يمكن الوصول إليها قبل تسجيل الدخول */}
-        <Stack.Screen name="signup" options={{ headerShown: false }} />
-        <Stack.Screen name="signupdetails" options={{ headerShown: false }} />
-        <Stack.Screen name="signupdetails1" options={{ headerShown: false }} />
-        <Stack.Screen name="signupdetails2" options={{ headerShown: false }} />
-        <Stack.Screen name="forgotpassword" options={{ headerShown: false }} />
-        <Stack.Screen name="accounttype" options={{ headerShown: false }} />
-        <Stack.Screen name="account-disabled" options={{ headerShown: false }} />
-        <Stack.Screen name="signupdetails_owner" options={{ headerShown: false }} />
-        <Stack.Screen name="contact-support" options={{ headerShown: false }} />
-        <Stack.Screen name="index" options={{ headerShown: false }} />
-        <Stack.Screen name="signin" options={{ headerShown: false }} />
-        <Stack.Screen name="screens/verify-email" options={{ headerShown: false }} />
-      </Stack>
-    );
-  }
+  return (
+    <Stack>
+      {/* إخفاء الهيدر للشاشات التي يتم التحكم فيها بواسطة Tabs */}
+      <Stack.Screen name="tabs" options={{ headerShown: false }} />
+      {/* إخفاء الهيدر لشاشات المصادقة */}
+      <Stack.Screen name="login" options={{ headerShown: false }} />
+      <Stack.Screen name="signin" options={{ headerShown: false }} />
+      <Stack.Screen name="signup" options={{ headerShown: false }} />
+      <Stack.Screen name="forgotpassword" options={{ headerShown: false }} />
+      <Stack.Screen name="verify-email" options={{ headerShown: false }} />
+      <Stack.Screen name="account-disabled" options={{ headerShown: false }} />
 
-  // إذا كان المستخدم مسجلاً دخول، تحقق من بريده الإلكتروني
-  if (userEmail === 'mahmood.ali.d99@gmail.com') {
-    // المسؤول: وجهه إلى لوحة تحكم المسؤول
-    return (
-      <Stack>
-        <Stack.Screen name="screens/admin/dashboard" options={{ headerShown: false }} />
-        {/* أضف هنا جميع الشاشات التي يمكن للمسؤول الوصول إليها */}
-        <Stack.Screen name="login" options={{ headerShown: false }} />
-        <Stack.Screen name="signup" options={{ headerShown: false }} />
-        <Stack.Screen name="signupdetails" options={{ headerShown: false }} />
-        <Stack.Screen name="signupdetails1" options={{ headerShown: false }} />
-        <Stack.Screen name="signupdetails2" options={{ headerShown: false }} />
-        <Stack.Screen name="forgotpassword" options={{ headerShown: false }} />
-        <Stack.Screen name="accounttype" options={{ headerShown: false }} />
-        <Stack.Screen name="account-disabled" options={{ headerShown: false }} />
-        <Stack.Screen name="contact-support" options={{ headerShown: false }} />
-        <Stack.Screen name="signupdetails_owner" options={{ headerShown: false }} />
-        <Stack.Screen name="index" options={{ headerShown: false }} />
-        <Stack.Screen name="signin" options={{ headerShown: false }} />
-        <Stack.Screen name="appartments/[id]" options={{ headerShown: false }} />
-        <Stack.Screen name="screens/verify-email" options={{ headerShown: false }} />
-      </Stack>
-    );
-  } else {
-    // المستخدم العادي، وجهه إلى علامات التبويب (Tabs)
-    return (
-      <Stack>
-        <Stack.Screen name="tabs" options={{ headerShown: false }} />
-        {/* أضف هنا جميع الشاشات التي يمكن للمستخدم العادي الوصول إليها */}
-        <Stack.Screen name="login" options={{ headerShown: false }} />
-        <Stack.Screen name="signup" options={{ headerShown: false }} />
-        <Stack.Screen name="signupdetails" options={{ headerShown: false }} />
-        <Stack.Screen name="signupdetails1" options={{ headerShown: false }} />
-        <Stack.Screen name="accounttype" options={{ headerShown: false }} />
-        <Stack.Screen name="signupdetails2" options={{ headerShown: false }} />
-        <Stack.Screen name="forgotpassword" options={{ headerShown: false }} />
-        <Stack.Screen name="account-disabled" options={{ headerShown: false }} />
-        <Stack.Screen name="contact-support" options={{ headerShown: false }} />
-        <Stack.Screen name="signupdetails_owner" options={{ headerShown: false }} />
-        <Stack.Screen name="index" options={{ headerShown: false }} />
-        <Stack.Screen name="signin" options={{ headerShown: false }} />
-        <Stack.Screen name="appartments/[id]" options={{ headerShown: false }} />
-        <Stack.Screen name="screens/verify-email" options={{ headerShown: false }} />
-      </Stack>
-    );
-  }
+      {/* شاشات التسجيل التفصيلية */}
+      <Stack.Screen name="signupdetails" options={{ headerShown: false }} />
+      <Stack.Screen name="signupdetails1" options={{ headerShown: false }} />
+      <Stack.Screen name="signupdetails2" options={{ headerShown: false }} />
+
+      {/* شاشات المالك */}
+      <Stack.Screen name="owner/verify" options={{ headerShown: false }} />
+      <Stack.Screen name="owner/upload_documents" options={{ headerShown: false }} />
+
+      {/* شاشات المسؤول */}
+      <Stack.Screen name="admin/owner_requests" options={{ headerShown: false }} />
+      
+      
+      {/* شاشات الشقق */}
+      <Stack.Screen name="appartments/[id]" options={{ headerShown: false }} />
+
+
+      {/* أي شاشات أخرى تحتاج إلى هيدر يمكن إزالة headerShown: false منها */}
+      {/* <Stack.Screen name="+not-found" /> */}
+    </Stack>
+  );
 }
-
-const styles = StyleSheet.create({
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-});

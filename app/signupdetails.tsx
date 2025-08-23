@@ -78,7 +78,7 @@ export default function SignupInfoScreen() {
     const encodedBirthday = encodeURIComponent(formatDate(birthday));
 
     router.push(
-      `/accounttype?email=${encodedEmail}&fullname=${encodedFullName}&birthday=${encodedBirthday}&gender=${encodedGender}`
+      `/signupdetails1?email=${encodedEmail}&fullname=${encodedFullName}&birthday=${encodedBirthday}&gender=${encodedGender}`
     );
   };
 
