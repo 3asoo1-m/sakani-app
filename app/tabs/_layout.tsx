@@ -1,13 +1,14 @@
 // app/tabs/_layout.tsx
+
 import { FontAwesome, MaterialIcons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, View } from 'react-native'; // إضافة ActivityIndicator و View
-import { supabase } from '../../lib/supabase'; // تأكد من المسار الصحيح لـ supabase
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { supabase } from '../../lib/supabase'; // تأكد من أن هذا المسار صحيح
 
 export default function TabLayout() {
-  const [userRole, setUserRole] = useState<string | null>(null);
-  const [loadingRole, setLoadingRole] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchUserRole = async () => {
@@ -19,30 +20,22 @@ export default function TabLayout() {
             .select('role')
             .eq('id', user.id)
             .single();
-
-          if (error) {
-            console.error('Error fetching user role:', error.message);
-          } else if (profile) {
-            setUserRole(profile.role);
-          }
+          setIsAdmin(profile?.role === 'admin');
+        } else {
+          setIsAdmin(false);
         }
-      } catch (error) {
-        console.error('Error in fetchUserRole:', error);
+      } catch (e) {
+        setIsAdmin(false);
       } finally {
-        setLoadingRole(false);
+        setLoading(false);
       }
     };
 
     fetchUserRole();
 
-    // الاستماع لتغيرات حالة المصادقة لتحديث الدور
-    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session) {
-        fetchUserRole(); // إعادة جلب الدور عند تسجيل الدخول/الخروج
-      } else {
-        setUserRole(null);
-        setLoadingRole(false);
-      }
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      setLoading(true);
+      fetchUserRole();
     });
 
     return () => {
@@ -50,9 +43,9 @@ export default function TabLayout() {
     };
   }, []);
 
-  if (loadingRole) {
+  if (loading) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+      <View style={styles.loaderContainer}>
         <ActivityIndicator size="large" color="#1D9BF0" />
       </View>
     );
@@ -60,67 +53,69 @@ export default function TabLayout() {
 
   return (
     <Tabs
-      screenOptions={({ route }) => ({
-        tabBarShowLabel: false,
+      screenOptions={{
+        tabBarActiveTintColor: '#1D9BF0',
+        tabBarInactiveTintColor: '#888',
+        tabBarShowLabel: true,
         headerShown: false,
-        tabBarStyle: {
-          backgroundColor: '#f9f9f9',
-          borderTopColor: '#ddd',
-          height: 60,
-        },
-        tabBarIcon: ({ color, size, focused }) => {
-          let iconName: keyof typeof FontAwesome.glyphMap = 'question';
-          let IconComponent: any = FontAwesome; // المكون الافتراضي للأيقونات
-
-          switch (route.name) {
-            case 'home':
-              iconName = 'home';
-              break;
-            case 'search':
-              iconName = 'search';
-              break;
-            case 'favorites':
-              iconName = 'heart';
-              break;
-            case 'notifications':
-              iconName = 'bell';
-              break;
-            case 'profile':
-              iconName = 'user';
-              break;
-            case 'admin/dashboard': // اسم الشاشة الجديدة للوحة التحكم
-              IconComponent = MaterialIcons; // استخدام MaterialIcons لهذا التبويب
-              iconName = 'dashboard' as keyof typeof FontAwesome.glyphMap; // أيقونة لوحة التحكم
-              break;
-          }
-
-          return (
-            <IconComponent
-              name={iconName}
-              size={24}
-              color={focused ? '#1D9BF0' : '#888'}
-            />
-          );
-        },
-      })}
+        tabBarStyle: { backgroundColor: '#ffffff', borderTopWidth: 0, height: 65, paddingBottom: 10 },
+      }}
     >
-      <Tabs.Screen name="home" />
-      <Tabs.Screen name="search" />
-      <Tabs.Screen name="favorites" />
-      <Tabs.Screen name="notifications" />
-      <Tabs.Screen name="profile" />
+      <Tabs.Screen
+        name="home"
+        options={{
+          title: 'الرئيسية',
+          tabBarIcon: ({ color, focused }) => <FontAwesome name="home" size={focused ? 28 : 24} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="search"
+        options={{
+          title: 'بحث',
+          tabBarIcon: ({ color, focused }) => <FontAwesome name="search" size={focused ? 28 : 24} color={color} />,
+        }}
+      />
+      
+      {/* ▼▼▼▼▼ هذا هو الحل الصحيح والنهائي ▼▼▼▼▼ */}
+      <Tabs.Screen
+        name="owner_requests"
+        options={{
+          // إذا لم يكن المستخدم أدمن، فإن `href: null` يخبر Expo Router
+          // أن يتجاهل هذا التبويب تمامًا ويخفيه من الواجهة.
+          // @ts-ignore 
+          href: isAdmin ? 'owner_requests' : null,
+          
+          title: 'الطلبات',
+          tabBarIcon: ({ color, focused }) => (
+            <MaterialIcons name="pending-actions" size={focused ? 28 : 24} color={color} />
+          ),
+        }}
+      />
+      {/* ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲ */}
 
-      {userRole === 'admin' && (
-        <Tabs.Screen
-          name="admin/dashboard" // هذا المسار معرف تلقائياً بواسطة _sitemap
-          options={{
-            title: 'لوحة التحكم',
-            tabBarIcon: ({ color, focused }) => (
-              <MaterialIcons name={focused ? 'dashboard' : 'dashboard'} color={color} size={24} />
-            ),
-          }}
-        />
-      )}
+      <Tabs.Screen
+        name="favorites"
+        options={{
+          title: 'المفضلة',
+          tabBarIcon: ({ color, focused }) => <FontAwesome name="heart" size={focused ? 28 : 24} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: 'ملفي',
+          tabBarIcon: ({ color, focused }) => <FontAwesome name="user" size={focused ? 28 : 24} color={color} />,
+        }}
+      />
     </Tabs>
   );
 }
+
+const styles = StyleSheet.create({
+  loaderContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f9f9f9',
+  },
+});
