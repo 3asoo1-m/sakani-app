@@ -60,6 +60,7 @@ export default function ApartmentDetails() {
         .eq('id', id)
         .single();
 
+      console.log('Apartment data:', data)
       if (error || !data) {
         console.log('خطأ في جلب بيانات الشقة:', error);
         router.back();
@@ -246,16 +247,22 @@ export default function ApartmentDetails() {
         </View>
 
         {/* Mini Gallery thumbnails */}
-        <View style={styles.thumbnailRow}>
-          {images.slice(0, 4).map((uri, index) => (
-            <Image key={index} source={{ uri }} style={styles.thumbnail} resizeMode="cover" />
-          ))}
-          {images.length > 4 && (
-            <View style={styles.moreImages}>
-              <Text style={styles.moreImagesText}>+{images.length - 4}</Text>
-            </View>
-          )}
-        </View>
+<View style={styles.thumbnailRow}>
+  {[
+    apartment.image_url,
+    apartment.image_url2,
+    apartment.image_url3,
+    apartment.image_url4,
+    apartment.image_url5,
+  ]
+    .filter(uri => uri) // إزالة الصور الفارغة
+    .slice(0, 4)        // أول 4 صور فقط
+    .map((uri, index) => (
+      <Image key={index} source={{ uri }} style={styles.thumbnail} resizeMode="cover" />
+    ))}
+</View>
+
+
       </View>
 
       {/* Content */}
@@ -328,40 +335,61 @@ export default function ApartmentDetails() {
                   style={styles.agentImage}
                 />
                 <View>
-                  <Text style={styles.agentName}>{apartment.agent_name || 'John Doe'}</Text>
+                  <Text style={styles.agentName}>
+                    {apartment.contact_name || 'مالك الشقة'}
+                  </Text>
                   <Text style={styles.agentContact}>
-                    للتواصل: {apartment.contact_number || 'غير متوفر'}
+                    للتواصل: {apartment.contact_phone || 'غير متوفر'}
                   </Text>
                 </View>
               </View>
+
             </>
           )}
 
           {activeTab === 'gallery' && (
             <>
               <View style={styles.galleryContainer}>
-                {images.map((uri, index) => (
-                  <TouchableOpacity
-                    key={index}
-                    onPress={() => {
-                      setCurrentImageIndex(index);
-                      setIsImageViewVisible(true);
-                    }}
-                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                  >
-                    <Image source={{ uri }} style={styles.galleryImage} resizeMode="cover" />
-                  </TouchableOpacity>
-                ))}
+                {[
+                  apartment.image_url,
+                  apartment.image_url2,
+                  apartment.image_url3,
+                  apartment.image_url4,
+                  apartment.image_url5,
+                ]
+                  .filter(uri => uri) // يتأكد من عدم وجود قيم فارغة
+                  .map((uri, index) => (
+                    <TouchableOpacity
+                      key={index}
+                      onPress={() => {
+                        setCurrentImageIndex(index);
+                        setIsImageViewVisible(true);
+                      }}
+                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                    >
+                      <Image source={{ uri }} style={styles.galleryImage} resizeMode="cover" />
+                    </TouchableOpacity>
+                  ))}
               </View>
 
               <ImageViewing
-                images={images.map((uri) => ({ uri }))}
+                images={[
+                  apartment.image_url,
+                  apartment.image_url2,
+                  apartment.image_url3,
+                  apartment.image_url4,
+                  apartment.image_url5,
+                ]
+                  .filter(uri => uri)
+                  .map(uri => ({ uri }))
+                }
                 imageIndex={currentImageIndex}
                 visible={isImageViewVisible}
                 onRequestClose={() => setIsImageViewVisible(false)}
               />
             </>
           )}
+
 
           {activeTab === 'review' && (
             <View style={styles.section}>

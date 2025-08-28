@@ -46,6 +46,8 @@ export default function RootLayout() {
         <Stack.Screen name="signupdetails2" options={{ headerShown: false }} />
         <Stack.Screen name="owner/verify" options={{ headerShown: false }} />
         <Stack.Screen name="owner/upload_documents" options={{ headerShown: false }} />
+        <Stack.Screen name="owner/add_property" options={{ headerShown: false }} />
+
         
         {/* هذه الشاشة لم تعد ضرورية في مجلد admin إذا نقلتها للتبويبات */}
         {/* <Stack.Screen name="admin/owner_requests" options={{ headerShown: false }} /> */}

@@ -124,7 +124,8 @@ const ProfileScreen = () => {
                 يمكنك الآن إضافة وإدارة عقاراتك على المنصة.
               </Text>
             </View>
-            <TouchableOpacity style={[styles.ownerButton, { backgroundColor: '#34C759' }]}>
+            <TouchableOpacity style={[styles.ownerButton, { backgroundColor: '#34C759' }]}
+            onPress={() => router.push('/owner/manage_properties')}>
               <Text style={styles.ownerButtonText}>إدارة عقاراتي</Text>
               <Feather name="arrow-left" size={20} color="#fff" />
             </TouchableOpacity>

@@ -1,6 +1,6 @@
 // app/tabs/_layout.tsx
 
-import { FontAwesome, MaterialIcons } from '@expo/vector-icons';
+import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
@@ -65,48 +65,65 @@ export default function TabLayout() {
         name="home"
         options={{
           title: 'الرئيسية',
-          tabBarIcon: ({ color, focused }) => <FontAwesome name="home" size={focused ? 28 : 24} color={color} />,
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons name={focused ? "home" : "home-outline"} size={focused ? 28 : 24} color={color} />
+          ),
         }}
       />
       <Tabs.Screen
         name="search"
         options={{
           title: 'بحث',
-          tabBarIcon: ({ color, focused }) => <FontAwesome name="search" size={focused ? 28 : 24} color={color} />,
-        }}
-      />
-      
-      {/* ▼▼▼▼▼ هذا هو الحل الصحيح والنهائي ▼▼▼▼▼ */}
-      <Tabs.Screen
-        name="owner_requests"
-        options={{
-          // إذا لم يكن المستخدم أدمن، فإن `href: null` يخبر Expo Router
-          // أن يتجاهل هذا التبويب تمامًا ويخفيه من الواجهة.
-          // @ts-ignore 
-          href: isAdmin ? 'owner_requests' : null,
-          
-          title: 'الطلبات',
           tabBarIcon: ({ color, focused }) => (
-            <MaterialIcons name="pending-actions" size={focused ? 28 : 24} color={color} />
+            <Ionicons name={focused ? "search" : "search-outline"} size={focused ? 28 : 24} color={color} />
           ),
         }}
       />
-      {/* ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲ */}
+      <Tabs.Screen
+        name="notifications"
+        options={{
+          title: 'الإشعارات',
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons name={focused ? "notifications" : "notifications-outline"} size={focused ? 28 : 24} color={color} />
+          ),
+        }}
+      />
+
 
       <Tabs.Screen
         name="favorites"
         options={{
           title: 'المفضلة',
-          tabBarIcon: ({ color, focused }) => <FontAwesome name="heart" size={focused ? 28 : 24} color={color} />,
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons name={focused ? "heart" : "heart-outline"} size={focused ? 28 : 24} color={color} />
+          ),
         }}
       />
       <Tabs.Screen
         name="profile"
         options={{
           title: 'ملفي',
-          tabBarIcon: ({ color, focused }) => <FontAwesome name="user" size={focused ? 28 : 24} color={color} />,
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons name={focused ? "person" : "person-outline"} size={focused ? 28 : 24} color={color} />
+          ),
         }}
       />
+        {/* ▼▼▼▼▼ هذا هو الحل الصحيح والنهائي ▼▼▼▼▼ */}
+        <Tabs.Screen
+          name="owner_requests"
+          options={{
+            // إذا لم يكن المستخدم أدمن، فإن `href: null` يخبر Expo Router
+            // أن يتجاهل هذا التبويب تمامًا ويخفيه من الواجهة.
+  
+            href: isAdmin ? '/tabs/owner_requests' : null,
+  
+            title: 'الطلبات',
+            tabBarIcon: ({ color, focused }) => (
+              <MaterialIcons name="pending-actions" size={focused ? 28 : 24} color={color} />
+            ),
+          }}
+        />
+        {/* ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲ */}
     </Tabs>
   );
 }
